@@ -1,0 +1,25 @@
+import mongoose from "mongoose";
+
+const folderSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true,
+    },
+    owner: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    room: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Room",
+        default: null
+    },
+    files: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "File"
+    }],
+}, { timestamps: true });
+
+const Folder = mongoose.model("Folder", folderSchema);
+export default Folder;
