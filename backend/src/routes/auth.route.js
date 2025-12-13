@@ -1,12 +1,15 @@
 import express from "express";
+import protectRoute from "../middlewares/auth.middleware.js";
+import { googleLogin, login, logout, me, register, sendOtp, verifyOtp } from "../controllers/auth.controller.js";
 
 const router=express.Router();
 router.post("/register",register);
 router.post("/login",login);
-router.post("/me",authMiddleware,getMe);
-router.post("/logout",authMiddleware,logout);
+router.post("/me",protectRoute,me);
+router.post("/logout",protectRoute,logout);
 router.post("/googleLogin",googleLogin);
-router.post("/verify-email",authMiddleware,verify-email);
-router.post("/send-otp",authMiddleware,sentOtp);
+router.post("/sendOtp",protectRoute,sendOtp);
+router.post("/verifyOtp",protectRoute,verifyOtp);
+
 export default router;
 

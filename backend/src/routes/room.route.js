@@ -1,11 +1,14 @@
 import express from "express";
+import protectRoute from "../middlewares/auth.middleware.js";
+import { createRoom, deleteRoom, getAllRooms, getRoomById, invite, leaveRoom } from "../controllers/room.controller.js";
 
 const router=express.Router();
-router.use(authMiddleware);
-router.post("/create",verifiedUserMiddleware,createRoom);
+router.use(protectRoute);
+router.post("/create",createRoom);
 router.post("/invite",invite);
 router.post("/deleteRoom",deleteRoom);
-router.post("/getMyRooms",getAllRooms);
-router.post("/getRoomBy/:roomId",getRoomById);
+router.post("/getAllRooms",getAllRooms);
+router.post("/getRoomById/",getRoomById);
+router.post("leave",leaveRoom);
 
 export default router;

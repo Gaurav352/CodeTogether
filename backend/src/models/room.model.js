@@ -1,7 +1,7 @@
-import mongoose, { mongo } from "mongoose";
+import mongoose from "mongoose";
 
 const roomSchema=new mongoose.Schema({
-    roomID:{
+    roomCode:{
         type:String,
         unique:true,
         required:true,
