@@ -1,8 +1,11 @@
 // Hero.jsx
 import React from 'react';
 import CodeEditorMockup from './CodeEditorMockup';
+import useAuthStore from '../../zustand/authStore';
+import { Link } from 'react-router-dom';
 
 export default function Hero() {
+  const {authUser} = useAuthStore();
   return (
     <section className="bg-background py-20 md:py-32 overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
@@ -19,9 +22,11 @@ export default function Hero() {
               Stop sharing screens and start sharing context. Code, design, and chat in one unified workspace designed for speed and synchronicity.
             </p>
             <div className="flex flex-col sm:flex-row justify-center lg:justify-start gap-4">
-              <button className="rounded-lg bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all">
-                Start Building for Free
-              </button>
+              <Link to={authUser ? "/dashboard" : "/login"}>
+                <button className="rounded-lg bg-primary px-8 py-3.5 text-base font-semibold text-white shadow-sm hover:bg-blue-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all">
+                  Start Building for Free
+                </button>
+              </Link>
               <button className="rounded-lg border border-muted/30 px-8 py-3.5 text-base font-semibold text-white hover:bg-surface/50 transition-all">
                 Watch Demo
               </button>

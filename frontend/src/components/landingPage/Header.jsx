@@ -1,10 +1,13 @@
-// Header.jsx
-import React, { useState } from 'react';
+
+import React, { use, useState } from 'react';
+import { Link } from 'react-router-dom';
+import useAuthStore from '../../zustand/authStore';
 
 export default function Header() {
   // State to handle mobile menu toggle
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
+  const {authUser} = useAuthStore();
+  console.log("h",authUser);
   return (
     <header className="sticky top-0 z-50 w-full border-b border-muted/20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
@@ -31,12 +34,17 @@ export default function Header() {
 
         {/* Desktop Buttons */}
         <div className="hidden md:flex items-center gap-4">
+          {!authUser && (<Link to={"/login"}>
           <button className="text-sm font-medium text-muted hover:text-white transition-colors">
             Log in
           </button>
-          <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 transition-colors">
-            Get Started
-          </button>
+          </Link>)}
+          
+          <Link to={authUser ? "/dashboard":"/login"}>
+            <button className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-600 transition-colors">
+              Get Started
+            </button>
+          </Link>
         </div>
 
         {/* Mobile Menu Button (Hamburger) */}
@@ -87,12 +95,18 @@ export default function Header() {
            </nav>
            
            <div className="pt-4 flex flex-col gap-3 border-t border-muted/20 mt-4">
-             <button className="w-full text-left text-base font-medium text-muted hover:text-white">
-               Log in
-             </button>
+           {authUser && (<Link to={"/login"}>
+                <button className="w-full text-left text-base font-medium text-muted hover:text-white">
+                  Log in
+                </button>
+              </Link>)}
+              
+              <Link to={authUser ? "/dashboard":"/login"}>
              <button className="w-full rounded-md bg-primary px-4 py-3 text-base font-semibold text-white hover:bg-blue-600">
                Get Started
              </button>
+             </Link>
+             
            </div>
         </div>
       )}

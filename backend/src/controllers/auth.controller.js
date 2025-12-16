@@ -12,6 +12,7 @@ function generateOtp() {
 
 export const register = async (req, res) => {
     try {
+        console.log(req.body);
         const { fullName, email, password } = req.body;
         if (!fullName || !email || !password) {
             return res.status(400).json({
@@ -53,7 +54,7 @@ export const register = async (req, res) => {
 
         const userObj = newUser.toObject();
         delete userObj.password;
-        res.status(201).json(userObj);
+        return res.status(201).json({userObj,success:true,message:"Register Successfull"});
     } catch (error) {
         console.log("Error in register controller ", error);
         res.status(500).json({ message: error.message });
