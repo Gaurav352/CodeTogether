@@ -1,6 +1,6 @@
 import express from "express";
 import protectRoute from "../middlewares/auth.middleware.js";
-import { createRoom, deleteRoom, getAllRooms, getRoomById, invite, leaveRoom } from "../controllers/room.controller.js";
+import { createRoom, deleteRoom, getAllRooms, getJoinRequest, getRoomById, invite, leaveRoom, sendJoinRequest } from "../controllers/room.controller.js";
 
 const router=express.Router();
 router.use(protectRoute);
@@ -8,7 +8,9 @@ router.post("/create",createRoom);
 router.post("/invite",invite);
 router.post("/deleteRoom",deleteRoom);
 router.post("/getAllRooms",getAllRooms);
-router.post("/getRoomById/",getRoomById);
+router.post("/getRoomById/:roomId",getRoomById);
 router.post("leave",leaveRoom);
+router.post("/sendJoinRequest",sendJoinRequest);
+router.post('/getJoinRequests/:roomId',getJoinRequest);
 
 export default router;

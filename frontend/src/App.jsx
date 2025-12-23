@@ -9,16 +9,21 @@ import LoadingScreen from "./components/LoadingScreen";
 import useAuthStore from "./zustand/authStore";
 import { Toaster } from "react-hot-toast";
 import GlobalLoader from "./components/GlobalLoader";
+import { Loader2 } from "lucide-react";
 
 function App() {
-  const { authUser, checkAuth, authLoading } = useAuthStore();
+  const { authUser, checkAuth, isCheckingAuth } = useAuthStore();
+  const isTargetingRoom = location.pathname.startsWith('/room/');
 
   useEffect(() => {
     checkAuth();
   }, []);
 
-  if (authLoading) {
-    return <GlobalLoader />;
+  if (isCheckingAuth && !authUser) {
+    if(isTargetingRoom)return <LoadingScreen/>
+    return (
+      <GlobalLoader/>
+    );
   }
 
   return (
@@ -28,14 +33,14 @@ function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={!authUser ? <LoginPage />:<Navigate to="/"/>} />
         <Route path="/register" element={!authUser ? <RegisterPage />:<Navigate to="/"/>} />
-
+        
         <Route
           path="/dashboard"
           element={authUser ? <Dashboard /> : <Navigate to="/login" />}
         />
 
         <Route
-          path="/room"
+          path="/room/:roomId"
           element={authUser ? <RoomPage /> : <Navigate to="/login" />}
         />
       </Routes>

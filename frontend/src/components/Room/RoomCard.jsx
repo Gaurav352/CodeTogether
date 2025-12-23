@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-const RoomCard = ({ roomName, owner, createdAt, roomCode }) => {
+const RoomCard = ({ roomId,roomName, createdAt, inviteLink }) => {
   const [copied, setCopied] = useState(false);
 
   const formatDate = (dateString) => {
@@ -12,7 +13,7 @@ const RoomCard = ({ roomName, owner, createdAt, roomCode }) => {
   };
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(roomCode);
+    navigator.clipboard.writeText(inviteLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000); 
   };
@@ -36,10 +37,8 @@ const RoomCard = ({ roomName, owner, createdAt, roomCode }) => {
           </span>
         </div>
 
-        {/* Owner & Date */}
-        <p className="text-sm text-muted mb-1">
-          Owner: <span className="text-white font-medium">{owner}</span>
-        </p>
+        
+        
         <p className="text-xs text-muted/70">
           Created on {formatDate(createdAt)}
         </p>
@@ -58,9 +57,9 @@ const RoomCard = ({ roomName, owner, createdAt, roomCode }) => {
           title="Click to copy code"
         >
           <div className="flex flex-col">
-            <span className="text-[10px] uppercase text-muted font-bold tracking-wider">Room Code</span>
+            <span className="text-[10px] uppercase text-muted font-bold tracking-wider">Invite Link</span>
             <code className="text-sm font-mono text-secondary font-semibold">
-              {roomCode}
+              {inviteLink}
             </code>
           </div>
           
@@ -79,11 +78,13 @@ const RoomCard = ({ roomName, owner, createdAt, roomCode }) => {
         </div>
 
         {/* Enter Button */}
-        <button className="h-[46px] px-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-          </svg>
-        </button>
+        <Link to={`/room/${roomId}`}>
+            <button className="h-[46px] px-4 rounded-lg bg-primary hover:bg-blue-600 text-white font-semibold shadow-lg shadow-primary/20 transition-all active:scale-95 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+            </button>
+        </Link>
       </div>
     </div>
   );

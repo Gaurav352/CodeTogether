@@ -12,7 +12,7 @@ function generateOtp() {
 
 export const register = async (req, res) => {
     try {
-        console.log(req.body);
+        
         const { fullName, email, password } = req.body;
         if (!fullName || !email || !password) {
             return res.status(400).json({
@@ -63,31 +63,38 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
+        console.log(password);
         if (!email || !password) {
             return res.status(400).json({
                 message: "Please Provide all fields",
                 success: false
             })
         }
-        const user = await User.findOne({ email }).select("-password");
+        const user = await User.findOne({ email })
+
         if (!user) {
             return res.status(401).json({
                 message: "Email doesn't exist",
                 success: false
             })
         }
-        const token = await jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+        const isPasswordCorrect = await bcrypt.compare(password, user.password);
+        if (!isPasswordCorrect) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
+        delete user.password;
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
             expiresIn: "7d"
         })
         console.log(token);
         res.cookie("jwt", token, {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             httpOnly: true,
-            sameSite: "none",
+            sameSite: "strict",
             secure: process.env.NODE_ENV !== "development",
         });
         return res.status(200).json({
-            message: "Login successfull",
+            message: "Login successful",
             success: true,
             user
         })

@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import Room from "../models/room.model.js";
 import Folder from "../models/folder.model.js";
 import File from "../models/file.model.js";
+import JoinRequest from "../models/joinRequest.model.js";
 
 function generateInviteCodeSecure() {
     return crypto.randomInt(100000, 1_000_000).toString();
@@ -62,29 +63,24 @@ export const createRoom = async (req, res) => {
 export const getAllRooms = async (req, res) => {
     try {
         const userId = req.user._id;
+        console.log("here");
         if (!userId) {
             return res.status(401).json({
                 message: "User not found",
                 success: false
             })
         }
+        
         const user = await User.findById(userId)
             .populate("rooms", "name description createdAt roomCode inviteLink")
-            .lean();
-
+        
+        
         if (!user) {
             return res.status(404).json({
                 message: "User not found",
                 success: false,
             });
         }
-        if (!user.rooms || user.rooms.length === 0) {
-            return res.status(200).json({
-                message: "No active rooms",
-                success: true
-            })
-        }
-
         return res.status(200).json({
             message: "Rooms fetched successfully",
             success: true,
@@ -171,9 +167,9 @@ export const leaveRoom = async (req, res) => {
 }
 export const getRoomById = async (req, res) => {
     try {
-        const roomID = req.params.id;
+        const roomID = req.params.roomId;
         if (!roomID) {
-            return res.status(400).json({
+            return res.status(404).json({
                 message: "Room Id not found!"
             })
         }
@@ -190,7 +186,7 @@ export const getRoomById = async (req, res) => {
             room
         })
     } catch (error) {
-        console.error("Getroom by Id error:", err);
+        console.error("Getroom by Id error:", error);
         return res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
@@ -200,5 +196,78 @@ export const invite=async(req,res)=>{
         
     } catch (error) {
         
+    }
+}
+export const sendJoinRequest=async(req,res)=>{
+    try {
+        const {roomCode,message}=req.body;
+        if(!roomCode){
+            return res.status(400).json({
+                message:"RoomCode not found",
+                success:false
+            })
+        }
+        const room=await Room.findOne({roomCode:roomCode});
+        if(!room){
+            return res.status(404).json({
+                message:"Room not exist",
+                success:false
+            })
+        }
+        if (room.members.includes(req.user._id)) {
+            return res.status(400).json({
+                message: "You are already a member of this room",
+                success: false
+            });
+        }
+        const existingRequest = await JoinRequest.findOne({ 
+            senderId: req.user._id, 
+            roomId: room._id 
+        });
+        if(existingRequest){
+            return res.status(400).json({
+                message:"Request already sent",
+                success:false
+            })
+        }
+        await JoinRequest.create({
+            senderId: req.user._id,
+            roomId: room._id,    
+            message: message || '',
+            status: "pending"
+        });
+        return res.status(201).json({
+            success:true,message: "Request sent successfully"
+        })
+    } catch (error) {
+        console.error("error in sending join request ", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+}
+
+
+export const getJoinRequest=async(req,res)=>{
+    try {
+        const roomId=req.params.roomId;
+        if(!roomId){
+            return res.status(400).json({
+                message: "Room not found",
+                success: false
+            });
+        }
+        const joinRequests = await JoinRequest.find({roomId:roomId})
+        .populate("senderId","fullName email");
+
+        return res.status(200).json({
+            message: "Fetched all join requests",
+            success: true
+        });
+
+    } catch (error) {
+        console.log("error in fetching requests",error);
+        return res.status(400).json({
+            message: "Internal server error",
+            success: false
+        });
     }
 }

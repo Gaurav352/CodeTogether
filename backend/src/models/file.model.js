@@ -9,11 +9,6 @@ const fileSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-    owner: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
     folder: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Folder",
@@ -24,7 +19,7 @@ const fileSchema = new mongoose.Schema({
         ref: "Room",
         required: true
     },
-    typeOfFile: {
+    language: {
         type: String,
         required: true
     }

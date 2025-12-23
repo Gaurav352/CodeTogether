@@ -15,14 +15,6 @@ const folderSchema = new mongoose.Schema({
         ref: "Folder",
         default: null
     },
-    subfolders: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Folder"
-    }],
-    files: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "File"
-    }],
     roomId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Room",
