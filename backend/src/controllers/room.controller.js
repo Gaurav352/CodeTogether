@@ -4,6 +4,7 @@ import Room from "../models/room.model.js";
 import Folder from "../models/folder.model.js";
 import File from "../models/file.model.js";
 import JoinRequest from "../models/joinRequest.model.js";
+import Whiteboard from "../models/whiteboard.model.js";
 
 function generateInviteCodeSecure() {
     return crypto.randomInt(100000, 1_000_000).toString();
@@ -70,11 +71,11 @@ export const getAllRooms = async (req, res) => {
                 success: false
             })
         }
-        
+
         const user = await User.findById(userId)
             .populate("rooms", "name description createdAt roomCode inviteLink")
-        
-        
+
+
         if (!user) {
             return res.status(404).json({
                 message: "User not found",
@@ -191,27 +192,27 @@ export const getRoomById = async (req, res) => {
     }
 }
 
-export const invite=async(req,res)=>{
+export const invite = async (req, res) => {
     try {
-        
+
     } catch (error) {
-        
+
     }
 }
-export const sendJoinRequest=async(req,res)=>{
+export const sendJoinRequest = async (req, res) => {
     try {
-        const {roomCode,message}=req.body;
-        if(!roomCode){
+        const { roomCode, message } = req.body;
+        if (!roomCode) {
             return res.status(400).json({
-                message:"RoomCode not found",
-                success:false
+                message: "RoomCode not found",
+                success: false
             })
         }
-        const room=await Room.findOne({roomCode:roomCode});
-        if(!room){
+        const room = await Room.findOne({ roomCode: roomCode });
+        if (!room) {
             return res.status(404).json({
-                message:"Room not exist",
-                success:false
+                message: "Room not exist",
+                success: false
             })
         }
         if (room.members.includes(req.user._id)) {
@@ -220,24 +221,24 @@ export const sendJoinRequest=async(req,res)=>{
                 success: false
             });
         }
-        const existingRequest = await JoinRequest.findOne({ 
-            senderId: req.user._id, 
-            roomId: room._id 
+        const existingRequest = await JoinRequest.findOne({
+            senderId: req.user._id,
+            roomId: room._id
         });
-        if(existingRequest){
+        if (existingRequest) {
             return res.status(400).json({
-                message:"Request already sent",
-                success:false
+                message: "Request already sent",
+                success: false
             })
         }
         await JoinRequest.create({
             senderId: req.user._id,
-            roomId: room._id,    
+            roomId: room._id,
             message: message || '',
             status: "pending"
         });
         return res.status(201).json({
-            success:true,message: "Request sent successfully"
+            success: true, message: "Request sent successfully"
         })
     } catch (error) {
         console.error("error in sending join request ", error);
@@ -246,17 +247,17 @@ export const sendJoinRequest=async(req,res)=>{
 }
 
 
-export const getJoinRequest=async(req,res)=>{
+export const getJoinRequest = async (req, res) => {
     try {
-        const roomId=req.params.roomId;
-        if(!roomId){
+        const roomId = req.params.roomId;
+        if (!roomId) {
             return res.status(400).json({
                 message: "Room not found",
                 success: false
             });
         }
-        const joinRequests = await JoinRequest.find({roomId:roomId})
-        .populate("senderId","fullName email");
+        const joinRequests = await JoinRequest.find({ roomId: roomId })
+            .populate("senderId", "fullName email");
 
         return res.status(200).json({
             message: "Fetched all join requests",
@@ -264,10 +265,60 @@ export const getJoinRequest=async(req,res)=>{
         });
 
     } catch (error) {
-        console.log("error in fetching requests",error);
+        console.log("error in fetching requests", error);
         return res.status(400).json({
             message: "Internal server error",
             success: false
         });
+    }
+}
+export const getWhiteboard = async (req, res) => {
+    try {
+        const roomId = req.params.roomId;
+        if (!roomId) return res.status(401).json({
+            message: "Invalid Room ID",
+            success: false
+        })
+        const room = await Room.findById(roomId);
+        if (!roomId) return res.status(404).json({
+            message: "Room not found",
+            success: false
+        })
+        let whiteboard = await Whiteboard.findOne({ roomId });
+        if (!whiteboard) {
+            whiteboard = await Whiteboard.create({ roomId, elements: [] });
+        }
+        res.status(200).json({
+            message: "Whiteboard fetched",
+            success: true,
+            whiteboard
+        })
+    } catch (error) {
+        console.log("Error in getting whiteboard ", error);
+        res.status(500).json({ message: "Failed to fetch whiteboard", error });
+    }
+}
+export const saveWhiteboard = async (req, res) => {
+    try {
+        const { roomId } = req.params;
+        const { elements, appState } = req.body;
+        if (!roomId) return res.status(401).json({
+            message: "Invalid Room ID",
+            success: false
+        })
+        const room = await Room.findById(roomId);
+        if (!roomId) return res.status(404).json({
+            message: "Room not found",
+            success: false
+        })
+        const whiteboard = await Whiteboard.findOneAndUpdate(
+            { roomId },
+            { elements, appState },
+            { new: true, upsert: true }
+        );
+        res.status(200).json({ message: "Saved your progress", success: true, whiteboard });
+    } catch (error) {
+        console.log("Error in saving whiteboard ", error);
+        res.status(500).json({ message: "Failed to save whiteboard", error });
     }
 }

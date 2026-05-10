@@ -13,12 +13,13 @@ const messageSchema=new mongoose.Schema({
     text:{
         type:String,
         default:'',
-        required:true
     },
-    file:{
-        type:String,
-        default:''
-    }
+    attachments: [{
+        url: { type: String, required: true },
+        publicId: { type: String, required: true }, // For deletion
+        fileType: { type: String, enum: ["image", "video", "raw","code"], default: "raw" },
+        originalName: { type: String } // Useful for displaying "homework.pdf"
+    }],
 },{timestamps:true})
 const Message=mongoose.model("message",messageSchema);
 export default Message;

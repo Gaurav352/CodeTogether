@@ -92,7 +92,9 @@ export const fetchFileContent=async(req,res)=>{
             message:"file id not found",
             success:false
         })
+        
         const file=await File.findById(fileId);
+        console.log(file);
         return res.status(200).json({
             success:true,
             file

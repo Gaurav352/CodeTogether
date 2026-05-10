@@ -1,9 +1,9 @@
-import { Server } from "socket.io";
-import http from "http";
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+
 const app = express();
 const server = http.createServer(app);
-import ACTIONS from "./socketEvents.js";
 
 const io = new Server(server, {
     cors: {
@@ -11,49 +11,91 @@ const io = new Server(server, {
         methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     },
 });
-const getUsersInRoom = (roomId) => {
-    const roomSockets = io.sockets.adapter.rooms.get(roomId);
-    if (!roomSockets) return [];
 
-    const users = [];
-    roomSockets.forEach((socketId) => {
-        const userId = socketToUserMap[socketId];
-        if (userId) users.push(userId);
+// Store socketId -> { userId, fullName }
+const userSocketMap = {};
+
+// HELPER: Get all unique users in a room
+// "socketIdToIgnore" is used during disconnection to calculate the list 
+// AS IF that socket has already left.
+function getUsersInRoom(roomId, socketIdToIgnore = null) {
+    const room = io.sockets.adapter.rooms.get(roomId);
+    if (!room) return [];
+
+    // 1. Get all socket IDs currently in the room
+    const roomSocketIds = Array.from(room);
+
+    // 2. Filter out the socket that is currently disconnecting (if any)
+    const activeSocketIds = socketIdToIgnore 
+        ? roomSocketIds.filter(id => id !== socketIdToIgnore)
+        : roomSocketIds;
+
+    // 3. Map active sockets to User Data
+    const users = activeSocketIds
+        .map(socketId => userSocketMap[socketId])
+        .filter(user => user !== undefined); // Remove undefined/nulls
+
+    // 4. Deduplicate Users by userId
+    // This ensures that if a user has 2 tabs open, they are only listed ONCE.
+    const uniqueUsers = [];
+    const processedUserIds = new Set();
+
+    users.forEach(user => {
+        if (!processedUserIds.has(user.userId)) {
+            uniqueUsers.push(user);
+            processedUserIds.add(user.userId);
+        }
     });
-    return Array.from(new Set(users));
-};
-export const socketToUserMap = {};
+
+    return uniqueUsers;
+}
+
 io.on("connection", (socket) => {
+    // 1. Capture User Info from Query Params
     const userId = socket.handshake.query.userId;
     const fullName = socket.handshake.query.fullName;
-    if (userId && userId !== "undefined") {
-        socketToUserMap[socket.id] = {userId,fullName};
-        console.log(`User connected: ${userId}, Socket: ${socket.id}`);
+
+    if (userId && fullName && userId !== "undefined") {
+        userSocketMap[socket.id] = { userId, fullName };
+        console.log(`User connected: ${fullName} (${userId}), Socket: ${socket.id}`);
     }
-    socket.on(ACTIONS.JOIN_ROOM, ({ roomId, userId }) => {
-        console.log("here IN JOIN ROOM");
+
+    // 2. Handle Join Room
+    socket.on("JOIN_ROOM", ({ roomId }) => {
         socket.join(roomId);
-        socket.to(roomId).emit(ACTIONS.USER_JOINED, { userId });
-        const usersInRoom = getUsersInRoom(roomId);
-        console.log("users in room ",usersInRoom);
-        io.to(roomId).emit(ACTIONS.GET_ONLINE_USERS, usersInRoom);
-    })
+        
+        // Get fresh list of users in this room
+        const users = getUsersInRoom(roomId);
+        
+        // Notify everyone (including the new joiner)
+        io.in(roomId).emit("UPDATE_USER_LIST", users);
+        
+        // Optional: Notify others that X joined
+        socket.to(roomId).emit("USER_JOINED", { fullName });
+    });
+    socket.on("CODE_CHANGE", ({ roomId, code }) => {
+        console.log(code);
+        socket.to(roomId).emit("CODE_CHANGE", {code});
+    });
+
+    // 3. Handle Disconnection (Tab Close / Refresh)
     socket.on("disconnecting", () => {
-        // 1. Find who is leaving
-        console.log("disconnecting ", socket.id);
-        const userId = socketToUserMap[socket.id];
+        const rooms = [...socket.rooms];
+        
+        rooms.forEach((roomId) => {
+            // Check if this is a real room (socket.io creates a default room for the socket.id)
+            if (roomId !== socket.id) {
+                // Calculate what the room looks like WITHOUT this specific socket
+                const remainingUsers = getUsersInRoom(roomId, socket.id);
+                
+                // Send the updated list to the remaining people in the room
+                socket.in(roomId).emit("UPDATE_USER_LIST", remainingUsers);
+            }
+        });
 
-        if (userId) {
-            const rooms = [...socket.rooms];
-            rooms.forEach((roomId) => {
-                // Ignore the default room (which is same as socket.id)
-                if (roomId !== socket.id) {
-                    const remainingUsers = getUsersInRoom(roomId).filter(id => id !== userId);
-                    io.to(roomId).emit(ACTIONS.GET_ONLINE_USERS, remainingUsers);
-                }
-            });
-        }
-    })
+        // Finally, remove from global map
+        delete userSocketMap[socket.id];
+    });
+});
 
-})
 export { app, io, server };
