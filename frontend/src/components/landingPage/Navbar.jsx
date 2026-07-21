@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import useAuthStore from '../../zustand/authStore';
+import { Link } from 'react-router-dom';
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const {authUser} = useAuthStore();
+  console.log(authUser);
 
   return (
-    // Floating, frosted glass container
     <motion.nav 
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
@@ -28,12 +31,15 @@ export default function Navbar() {
 
         {/* Desktop Buttons */}
         <div className="hidden md:flex md:flex-1 items-center justify-end space-x-4">
-          <button className="text-sm font-medium text-ghost-white hover:text-brand-pink transition-colors">
-            Login
-          </button>
-          <button className="bg-ghost-white text-navy px-5 py-2 rounded-full hover:bg-brand-pink transition-colors font-bold shadow-[0_0_15px_rgba(228,145,201,0.4)]">
+          {!authUser && 
+            <Link
+            to={"/authPage"}
+            className="text-sm font-medium text-ghost-white hover:text-brand-pink transition-colors">
+              Login
+            </Link>}
+          {authUser && <Link to={"dashboard"} className="bg-ghost-white text-navy px-5 py-2 rounded-full hover:bg-brand-pink transition-colors font-bold shadow-[0_0_15px_rgba(228,145,201,0.4)]">
             Get Started
-          </button>
+          </Link>}
         </div>
 
         {/* Mobile Menu Button */}
@@ -58,8 +64,8 @@ export default function Navbar() {
           >
             <a href="#features" className="text-ghost-white font-medium">Features</a>
             <a href="#working" className="text-ghost-white font-medium">Working</a>
-            <button className="text-ghost-white font-medium">Login</button>
-            <button className="w-[80%] bg-brand-purple text-ghost-white py-3 rounded-full font-bold">Get Started</button>
+            {(!authUser) && <Link to={"/authPage"} className="text-ghost-white font-medium">Login</Link>}
+            {authUser && <Link to={"/dashboard"} className="w-[80%] bg-brand-purple text-ghost-white py-3 rounded-full font-bold">Get Started</Link>}
           </motion.div>
         )}
       </AnimatePresence>

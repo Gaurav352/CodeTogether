@@ -73,7 +73,7 @@ export const getAllRooms = async (req, res) => {
         }
 
         const user = await User.findById(userId)
-            .populate("rooms", "name description createdAt roomCode inviteLink")
+            .populate("rooms", "name description createdAt roomCode inviteLink members owner")
 
 
         if (!user) {

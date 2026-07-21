@@ -7,7 +7,7 @@ router.use(protectRoute);
 router.post("/create",createRoom);
 router.post("/invite",invite);
 router.post("/deleteRoom",deleteRoom);
-router.post("/getAllRooms",getAllRooms);
+router.get("/getAllRooms",getAllRooms);
 router.post("/getRoomById/:roomId",getRoomById);
 router.post("leave",leaveRoom);
 router.post("/sendJoinRequest",sendJoinRequest);

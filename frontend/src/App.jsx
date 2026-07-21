@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from "react-hot-toast";
 
-// Pages & Components
 import LandingPage from './Pages/LandingPage';
 import Dashboard from './Pages/Dashboard';
 import AuthPage from './Pages/AuthPage';
 import GlobalLoader from './components/GlobalLoader';
+import Workspace from './Pages/Workspace';
 
-// Stores
+
 import useAuthStore from './zustand/authStore';
+
 
 function App() {
   const { authUser, getMe, checkAuth, checkingAuth } = useAuthStore();
@@ -44,19 +45,20 @@ function App() {
       <Toaster position="top-right" />
       <Routes>
         <Route path='/' element={<LandingPage />} />
-
-        {/* Protected Dashboard Route  */}
         <Route
           path='/dashboard'
           element={authUser ? <Dashboard /> : <Navigate to="/authPage" />}
         />
-
-        {/* Auth Page Route: Redirect to dashboard if already logged in  */}
         <Route
           path='/authPage'
           element={!authUser ? <AuthPage /> : <Navigate to="/dashboard" />}
         />
+        <Route
+          path='/workspace/:roomId'
+          element={authUser ? <Workspace/> : <Navigate to="/authPage" />}
+        />
       </Routes>
+      
     </BrowserRouter>
   );
 }
