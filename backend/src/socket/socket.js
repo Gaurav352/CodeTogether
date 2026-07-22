@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
+import ACTIONS from "../../../socketEvents.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -15,17 +16,12 @@ const io = new Server(server, {
 // Store socketId -> { userId, fullName }
 const userSocketMap = {};
 
-// HELPER: Get all unique users in a room
-// "socketIdToIgnore" is used during disconnection to calculate the list 
-// AS IF that socket has already left.
 function getUsersInRoom(roomId, socketIdToIgnore = null) {
     const room = io.sockets.adapter.rooms.get(roomId);
     if (!room) return [];
 
-    // 1. Get all socket IDs currently in the room
     const roomSocketIds = Array.from(room);
 
-    // 2. Filter out the socket that is currently disconnecting (if any)
     const activeSocketIds = socketIdToIgnore 
         ? roomSocketIds.filter(id => id !== socketIdToIgnore)
         : roomSocketIds;
@@ -61,24 +57,20 @@ io.on("connection", (socket) => {
     }
 
     // 2. Handle Join Room
-    socket.on("JOIN_ROOM", ({ roomId }) => {
+    socket.on(ACTIONS.JOIN_ROOM, ({ roomId }) => {
         socket.join(roomId);
+        console.log("joining");
         
-        // Get fresh list of users in this room
         const users = getUsersInRoom(roomId);
         
-        // Notify everyone (including the new joiner)
-        io.in(roomId).emit("UPDATE_USER_LIST", users);
-        
-        // Optional: Notify others that X joined
-        socket.to(roomId).emit("USER_JOINED", { fullName });
+        io.in(roomId).emit(ACTIONS.GET_ONLINE_USERS, users);
+        socket.to(roomId).emit(ACTIONS.USER_JOINED, { fullName });
     });
-    socket.on("CODE_CHANGE", ({ roomId, code }) => {
+    socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
         console.log(code);
         socket.to(roomId).emit("CODE_CHANGE", {code});
     });
 
-    // 3. Handle Disconnection (Tab Close / Refresh)
     socket.on("disconnecting", () => {
         const rooms = [...socket.rooms];
         

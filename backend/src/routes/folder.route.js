@@ -4,7 +4,7 @@ import { createFile, createFolder, getFileTree,fetchFileContent,saveCode } from 
 
 const router=Router();
 router.use(protectRoute);
-router.post("/getFileTree/:roomId",getFileTree);
+router.get("/getFileTree/:roomId",getFileTree);
 router.post("/create",createFolder);
 router.post("/createFile",createFile);
 router.post('/fetchFileContent/:fileId',fetchFileContent);
