@@ -9,10 +9,8 @@ export default function CodeEditor({ roomId }) {
   const [theme, setTheme] = useState('vs-dark'); 
   const [language, setLanguage] = useState('javascript');
 
-  // Pull everything from Zustand!
   const { activeFile, isTreeLoading, fetchFileTree, hasFetchedFiles } = useEditorStore();
 
-  // Fetch the real data from MongoDB on mount
   useEffect(() => {
     if (roomId && !hasFetchedFiles) {
       fetchFileTree(roomId);

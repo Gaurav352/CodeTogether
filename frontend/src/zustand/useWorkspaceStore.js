@@ -4,8 +4,10 @@ import toast from "react-hot-toast";
 import ACTIONS from "../../../socketEvents.js";
 
 const useWorkspaceStore = create((set, get) => ({
+    roomId:null,
     activeUsers: [],
     isListening: false,
+    setRoomId: (roomId) => set({ roomId: roomId }),
     initWorkspaceListeners: (roomId) => {
         const { socket } = useSocketStore.getState();
         if (!socket || get().isListening) return;

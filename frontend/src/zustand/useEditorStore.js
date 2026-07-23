@@ -2,6 +2,8 @@ import { create } from "zustand";
 import axiosInstance from "../lib/axios";
 import buildFileTree from "../lib/buildFileTree";
 import useSocketStore from "./useSocketStore";
+import toast from "react-hot-toast";
+import getFileLanguage from "../lib/detectLanguage";
 const useEditorStore = create((set, get) => ({
     fileTree: [],
     activeFile: null,
@@ -18,6 +20,7 @@ const useEditorStore = create((set, get) => ({
             }
         } catch (error) {
             console.log("Error in fetching file tree ", error);
+            toast.error(error.response?.data?.message || "Failed to create file");
         } finally {
             set({ isTreeLoading: false });
         }
@@ -46,11 +49,9 @@ const useEditorStore = create((set, get) => ({
                 return { fileTree: [...state.fileTree, newNode] };
             }
 
-            // Otherwise, recursively find the parent folder and push the new child
             const insertNode = (nodes) => {
                 return nodes.map(node => {
                     if (node._id === parentId) {
-                        // Found the parent! Add the new node and force the folder open
                         return {
                             ...node,
                             isOpen: true,
@@ -67,30 +68,88 @@ const useEditorStore = create((set, get) => ({
             return { fileTree: insertNode(state.fileTree) };
         });
     },
-    createNode: async (roomId, name, type, parentId) => {
+    removeNodeFromTree: (nodeId) => {
+        set((state) => {
+            // 1. The Recursive Filter
+            const filterNodes = (nodes) => {
+                return nodes
+                    // Step A: Filter out the node if it exists at the current level
+                    .filter(node => node._id !== nodeId)
+                    // Step B: If it's a folder, recursively run this inside its children
+                    .map(node => {
+                        if (node.children) {
+                            return { ...node, children: filterNodes(node.children) };
+                        }
+                        return node;
+                    });
+            };
+
+            
+            const newActiveFile = state.activeFile?._id === nodeId ? null : state.activeFile;
+
+            return { 
+                fileTree: filterNodes(state.fileTree),
+                activeFile: newActiveFile
+            };
+        });
+    },
+    createFile: async (roomId, name, folder) => {
         try {
-            const {socket} = useSocketStore();
-            const payload = { roomId, name, type, parentId };
-            const res = await axiosInstance.post(`/folder/create`, payload);
+            const language = getFileLanguage(name);
+            const payload = { roomId, name, language, folder };
+            const res = await axiosInstance.post('/folder/createFile', payload);
+            if (res.data.success) {
+                const newNode = { ...res.data.file, type: 'file' };
+                get().addNodeToTree(newNode, folder);
+                set({ activeFile: newNode });
+                toast.success(res.data.message);
+                return true;
+            }
+        } catch (error) {
+            console.error("Failed to create file:", error);
+            toast.error(error.response?.data?.message || "Failed to create file");
+            return false;
+        }
+    },
+    createFolder: async (roomId, name, parentId) => {
+        try {
+
+            const payload = { roomId, name, parent: parentId };
+            const endpoint = '/folder/create';
+            const res = await axiosInstance.post(endpoint, payload);
 
             if (res.data.success) {
-                const newNode = res.data.node; 
-
+                const newNode = { ...res.data.folder, type: 'folder' };
                 get().addNodeToTree(newNode, parentId);
-
-                if (type === 'file') {
-                    set({ activeFile: newNode });
-                }
-                if (socket) {
-                    socket.emit('FILE_CREATED', { roomId, newNode, parentId });
-                }
-
-                return true; 
+                toast.success(res.data.message);
+                return true;
             }
         } catch (error) {
             console.error("Failed to create node:", error);
-            return false; 
+            toast.error(error.response?.data?.message || "Failed to create folder");
+            return false;
+        }
+    },
+    deleteNode: async (roomId, nodeId, nodeType) => {
+        try {
+            const endpoint = nodeType === 'file' ? '/folder/deleteFile' : '/folder/deleteFolder';
+            const res = await axiosInstance.delete(endpoint, {
+                data: {
+                    roomId: roomId,
+                    [nodeType === 'file' ? 'fileId' : 'folderId']: nodeId
+                }
+            });
+            if (res.data.success) {
+            get().removeNodeFromTree(nodeId);
+            
+            toast.success(res.data.message || `${nodeType} deleted successfully`);
+            return true;
+        }
+        } catch (error) {
+            console.error(`Failed to delete ${nodeType}:`, error);
+            toast.error(error.response?.data?.message || `Failed to delete ${nodeType}`);
+            return false;
         }
     }
-}))
+}));
 export default useEditorStore;

@@ -18,16 +18,6 @@ export default function EditorHeader({ theme, setTheme, language, setLanguage, a
 
       {/* Right: Settings (Theme & Language) */}
       <div className="flex items-center gap-4">
-        <select 
-          value={language} 
-          onChange={(e) => setLanguage(e.target.value)}
-          className="bg-navy border border-brand-purple/40 text-ghost-white text-xs rounded-full px-3 py-1.5 focus:outline-none focus:border-brand-pink transition-colors cursor-pointer"
-        >
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="cpp">C++</option>
-          <option value="java">Java</option>
-        </select>
 
         <select 
           value={theme} 

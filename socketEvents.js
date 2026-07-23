@@ -4,5 +4,6 @@ const ACTIONS={
     USER_JOINED:"user-joined",
     FILE_CREATED:"file-created",
     FILE_DELETED:"file-deleted",
+    FOLDER_CREATED:"folder-created"
 }
 export default ACTIONS;

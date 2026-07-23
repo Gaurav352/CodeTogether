@@ -1,25 +1,23 @@
 import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Folder, FolderOpen, FileCode, Trash2, Edit2, FilePlus, FolderPlus, X } from 'lucide-react';
+import { Folder, FolderOpen, FileCode, Trash2, FilePlus, FolderPlus, X } from 'lucide-react';
 import useEditorStore from '../../zustand/useEditorStore';
 import CreateNodeDialog from './CreateNodeDialog';
+import DeleteNodeDialog from './DeleteNodeDialog'; 
 
 export default function FileExplorer({ onClose }) {
-  const { roomId } = useParams(); // Grab roomId from the URL
-  const { fileTree, activeFile, setActiveFile, toggleFolder, createNode } = useEditorStore();
+  const { fileTree, activeFile, setActiveFile, toggleFolder } = useEditorStore();
   
-  // Dialog State
   const [dialogConfig, setDialogConfig] = useState({ isOpen: false, type: null, parentId: null });
+  const [deleteConfig, setDeleteConfig] = useState({ isOpen: false, node: null });
 
   const openCreateDialog = (e, type, parentId = null) => {
     if (e) e.stopPropagation(); 
     setDialogConfig({ isOpen: true, type, parentId });
   };
-
-  // This bridges the Dialog component to the Zustand Store
-  const handleCreateSubmit = async (name, type, parentId) => {
-    // createNode returns true if API succeeds, false if it fails
-    return await createNode(roomId, name, type, parentId);
+  const openDeleteDialog = (e, node) => {
+    if (e) e.stopPropagation();
+    setDeleteConfig({ isOpen: true, node });
   };
 
   const renderTree = (nodes) => {
@@ -50,8 +48,8 @@ export default function FileExplorer({ onClose }) {
                 <FolderPlus size={14} className="hover:text-brand-purple transition-colors" onClick={(e) => openCreateDialog(e, 'folder', node._id)} />
               </>
             )}
-            <Edit2 size={14} className="hover:text-brand-purple transition-colors" onClick={(e) => e.stopPropagation()} />
-            <Trash2 size={14} className="hover:text-red-400 transition-colors" onClick={(e) => e.stopPropagation()} />
+           
+            <Trash2 size={14} className="hover:text-red-400 transition-colors" onClick={(e) => openDeleteDialog(e, node)} />
           </div>
         </div>
         
@@ -85,13 +83,17 @@ export default function FileExplorer({ onClose }) {
         </div>
       </div>
 
-      {/* Render the clean dialog component here! */}
       <CreateNodeDialog 
         isOpen={dialogConfig.isOpen}
         type={dialogConfig.type}
         parentId={dialogConfig.parentId}
         onClose={() => setDialogConfig({ isOpen: false, type: null, parentId: null })}
-        onSubmit={handleCreateSubmit}
+      />
+
+      <DeleteNodeDialog 
+        isOpen={deleteConfig.isOpen}
+        node={deleteConfig.node}
+        onClose={() => setDeleteConfig({ isOpen: false, node: null })}
       />
     </>
   );

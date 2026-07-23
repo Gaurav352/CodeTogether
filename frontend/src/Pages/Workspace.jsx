@@ -12,10 +12,11 @@ export default function Workspace() {
   const { authUser } = useAuthStore();
   const { roomId } = useParams();
   const { socket, connect, disconnect } = useSocketStore();
-  const { initWorkspaceListeners, cleanupWorkspaceListeners } = useWorkspaceStore();
+  const { initWorkspaceListeners, cleanupWorkspaceListeners, setRoomId } = useWorkspaceStore();
 
   useEffect(() => {
     if (authUser && roomId) {
+      setRoomId(roomId);
       connect(authUser._id, authUser.fullName); 
     }
     return () => {
@@ -37,7 +38,7 @@ export default function Workspace() {
   const renderActiveView = () => {
     switch (activeTab) {
       case 'editor':
-        return <CodeEditor />;
+        return <CodeEditor roomId={roomId} />;
       case 'whiteboard':
         return <div className="text-ghost-white p-8">Whiteboard Component goes here...</div>;
       case 'chat':
