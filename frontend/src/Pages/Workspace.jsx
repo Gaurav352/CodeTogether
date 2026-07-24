@@ -6,12 +6,14 @@ import useSocketStore from '../zustand/useSocketStore';
 import useWorkspaceStore from '../zustand/useWorkspaceStore';
 import useAuthStore from '../zustand/authStore';
 import { useParams } from 'react-router-dom';
+import useEditorStore from '../zustand/useEditorStore';
 
 export default function Workspace() {
   const [activeTab, setActiveTab] = useState('editor');
   const { authUser } = useAuthStore();
   const { roomId } = useParams();
   const { socket, connect, disconnect } = useSocketStore();
+  const {initEditorListeners, cleanupEditorListeners} = useEditorStore();
   const { initWorkspaceListeners, cleanupWorkspaceListeners, setRoomId } = useWorkspaceStore();
 
   useEffect(() => {
@@ -26,11 +28,13 @@ export default function Workspace() {
   useEffect(() => {
     if (socket && roomId) {
       initWorkspaceListeners(roomId);
+      initEditorListeners();
     }
     return () => {
       cleanupWorkspaceListeners();
+      cleanupEditorListeners();
     };
-  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners]);
+  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners,initEditorListeners]);
   const handleLeaveRoom = () => {
     navigate('/dashboard'); 
   };

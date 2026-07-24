@@ -1,9 +1,11 @@
 import { create } from "zustand";
 import axiosInstance from "../lib/axios";
-import buildFileTree from "../lib/buildFileTree";
+import buildFileTree,{sortFileTree} from "../lib/buildFileTree";
 import useSocketStore from "./useSocketStore";
 import toast from "react-hot-toast";
 import getFileLanguage from "../lib/detectLanguage";
+import ACTIONS from "../../../socketEvents.js";
+
 const useEditorStore = create((set, get) => ({
     fileTree: [],
     activeFile: null,
@@ -16,6 +18,7 @@ const useEditorStore = create((set, get) => ({
             const res = await axiosInstance.get(`/folder/getFileTree/${roomId}`);
             if (res.data.success) {
                 const nestedTree = buildFileTree(res.data.folders, res.data.files);
+                const sortedTree = sortFileTree(nestedTree);
                 set({ fileTree: nestedTree });
             }
         } catch (error) {
@@ -46,7 +49,9 @@ const useEditorStore = create((set, get) => ({
         set((state) => {
             // If parentId is null, it belongs at the root of the workspace
             if (!parentId) {
-                return { fileTree: [...state.fileTree, newNode] };
+                const exists = state.fileTree.some(node => node._id === newNode._id);
+                if (exists) return state;
+                return { fileTree: sortFileTree([...state.fileTree, newNode]) };
             }
 
             const insertNode = (nodes) => {
@@ -64,8 +69,8 @@ const useEditorStore = create((set, get) => ({
                     return node;
                 });
             };
-
-            return { fileTree: insertNode(state.fileTree) };
+            const updatedTree = insertNode(state.fileTree);
+            return { fileTree: sortFileTree(updatedTree) };
         });
     },
     removeNodeFromTree: (nodeId) => {
@@ -84,10 +89,10 @@ const useEditorStore = create((set, get) => ({
                     });
             };
 
-            
+
             const newActiveFile = state.activeFile?._id === nodeId ? null : state.activeFile;
 
-            return { 
+            return {
                 fileTree: filterNodes(state.fileTree),
                 activeFile: newActiveFile
             };
@@ -100,7 +105,6 @@ const useEditorStore = create((set, get) => ({
             const res = await axiosInstance.post('/folder/createFile', payload);
             if (res.data.success) {
                 const newNode = { ...res.data.file, type: 'file' };
-                get().addNodeToTree(newNode, folder);
                 set({ activeFile: newNode });
                 toast.success(res.data.message);
                 return true;
@@ -119,8 +123,6 @@ const useEditorStore = create((set, get) => ({
             const res = await axiosInstance.post(endpoint, payload);
 
             if (res.data.success) {
-                const newNode = { ...res.data.folder, type: 'folder' };
-                get().addNodeToTree(newNode, parentId);
                 toast.success(res.data.message);
                 return true;
             }
@@ -140,16 +142,40 @@ const useEditorStore = create((set, get) => ({
                 }
             });
             if (res.data.success) {
-            get().removeNodeFromTree(nodeId);
-            
-            toast.success(res.data.message || `${nodeType} deleted successfully`);
-            return true;
-        }
+                toast.success(res.data.message || `${nodeType} deleted successfully`);
+                return true;
+            }
         } catch (error) {
             console.error(`Failed to delete ${nodeType}:`, error);
             toast.error(error.response?.data?.message || `Failed to delete ${nodeType}`);
             return false;
         }
-    }
+    },
+    initEditorListeners: () => {
+        const socket = useSocketStore.getState().socket;
+        if (!socket) return;
+        socket.off(ACTIONS.RECEIVE_FILE_CREATED);
+        socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
+        socket.off(ACTIONS.RECEIVE_NODE_DELETED);
+        socket.on(ACTIONS.RECEIVE_FILE_CREATED, ({ newNode, parentId }) => {
+            const nodeWithType = { ...newNode, type: 'file' };
+            get().addNodeToTree(nodeWithType, parentId);
+        });
+
+        socket.on(ACTIONS.RECEIVE_FOLDER_CREATED, ({ newNode, parentId }) => {
+            const nodeWithType = { ...newNode, type: 'folder', isOpen: false };
+            get().addNodeToTree(nodeWithType, parentId);
+        });
+        socket.on(ACTIONS.RECEIVE_NODE_DELETED, ({ nodeId }) => {
+            get().removeNodeFromTree(nodeId);
+        })
+    },
+    cleanupEditorListeners: () => {
+        const socket = useSocketStore.getState().socket;
+        if (!socket) return;
+        socket.off(ACTIONS.RECEIVE_FILE_CREATED);
+        socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
+        socket.off(ACTIONS.RECEIVE_NODE_DELETED);
+    },
 }));
 export default useEditorStore;

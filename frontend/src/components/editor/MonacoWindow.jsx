@@ -9,7 +9,7 @@ export default function MonacoWindow({ theme, language, activeFile }) {
         language={language}
         theme={theme}
         path={activeFile} // Monaco uses this for internal Model management
-        defaultValue={`// Welcome to CodeSync\n// Active File: ${activeFile}\n\nconsole.log('Let's build something epic.');`}
+        defaultValue={`// Welcome to CodeSync\n// Active File: ${activeFile}\n\nconsole.log("Let's build something epic.");`}
         options={{
           minimap: { enabled: false }, // Turn off minimap to keep it clean
           fontSize: 14,
