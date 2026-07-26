@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import axiosInstance from "../lib/axios";
-import buildFileTree,{sortFileTree} from "../lib/buildFileTree";
+import buildFileTree, { sortFileTree } from "../lib/buildFileTree";
 import useSocketStore from "./useSocketStore";
 import toast from "react-hot-toast";
 import getFileLanguage from "../lib/detectLanguage";
@@ -8,6 +8,7 @@ import ACTIONS from "../../../socketEvents.js";
 
 const useEditorStore = create((set, get) => ({
     fileTree: [],
+    fileCache: {},
     activeFile: null,
     isTreeLoading: false,
     hasFetchedFiles: false,
@@ -30,6 +31,49 @@ const useEditorStore = create((set, get) => ({
     },
     setActiveFile: (fileNode) => {
         set({ activeFile: fileNode });
+    },
+    fetchFileContent: async () => {
+        const { fileCache, activeFile } = get();
+        if (!activeFile || !activeFile._id) return;
+        const fileId = activeFile._id;
+        if (fileCache[fileId]) {
+            set((state) => ({
+                activeFile: {
+                    ...state.activeFile,
+                    content: fileCache[fileId]
+                }
+            }));
+            return;
+        }
+        try {
+            const res = await axiosInstance.get(`/folder/getFileContent/${get().activeFile._id}`);
+            if (res.data.success) {
+                const fileData = res.data.file;
+                set((state)=>({
+                    activeFile: fileData,
+                    fileCache:{
+                        ...state.fileCache,
+                        fileId:fileData.content
+                    }
+                }));
+            }
+        } catch (error) {
+            console.log("Error in fetching file content ", error);
+            toast.error(error.response?.data?.message || "Failed to fetch file content");
+        }
+    },
+    updateFileContent:(fileId,newContent,roomId,skipEmit=false)=>{
+        set((state)=>({
+            activeFile:state.activeFile?._id===fileId?{...state.activeFile,content:newContent}:state.activeFile,
+            fileCache:{
+                ...state.fileCache,
+                [fileId]:newContent
+            }
+        }));
+        const socket = useSocketStore.getState().socket;
+        if(!skipEmit && socket && roomId){
+            socket.emit(ACTIONS.FILE_UPDATED,{fileId,content:newContent,roomId});
+        }
     },
     toggleFolder: (folderId) => {
         set((state) => {
@@ -157,6 +201,7 @@ const useEditorStore = create((set, get) => ({
         socket.off(ACTIONS.RECEIVE_FILE_CREATED);
         socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
         socket.off(ACTIONS.RECEIVE_NODE_DELETED);
+        socket.off(ACTIONS.RECEIVE_FILE_UPDATED);
         socket.on(ACTIONS.RECEIVE_FILE_CREATED, ({ newNode, parentId }) => {
             const nodeWithType = { ...newNode, type: 'file' };
             get().addNodeToTree(nodeWithType, parentId);
@@ -169,6 +214,9 @@ const useEditorStore = create((set, get) => ({
         socket.on(ACTIONS.RECEIVE_NODE_DELETED, ({ nodeId }) => {
             get().removeNodeFromTree(nodeId);
         })
+        socket.on(ACTIONS.RECEIVE_FILE_UPDATED, ({ fileId, content }) => {
+            get().updateFileContent(fileId, content,null,true);
+        });
     },
     cleanupEditorListeners: () => {
         const socket = useSocketStore.getState().socket;
@@ -176,6 +224,7 @@ const useEditorStore = create((set, get) => ({
         socket.off(ACTIONS.RECEIVE_FILE_CREATED);
         socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
         socket.off(ACTIONS.RECEIVE_NODE_DELETED);
+        socket.off(ACTIONS.RECEIVE_FILE_UPDATED);
     },
 }));
 export default useEditorStore;

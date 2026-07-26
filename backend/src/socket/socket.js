@@ -66,9 +66,8 @@ io.on("connection", (socket) => {
         io.in(roomId).emit(ACTIONS.GET_ONLINE_USERS, users);
         socket.to(roomId).emit(ACTIONS.USER_JOINED, { fullName });
     });
-    socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
-        console.log(code);
-        socket.to(roomId).emit("CODE_CHANGE", {code});
+    socket.on(ACTIONS.FILE_UPDATED, ({ fileId, content, roomId }) => {
+        socket.to(roomId).emit(ACTIONS.RECEIVE_FILE_UPDATED, {fileId,content});
     });
 
     socket.on("disconnecting", () => {

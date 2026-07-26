@@ -7,6 +7,7 @@ import useWorkspaceStore from '../zustand/useWorkspaceStore';
 import useAuthStore from '../zustand/authStore';
 import { useParams } from 'react-router-dom';
 import useEditorStore from '../zustand/useEditorStore';
+import LiveChatPanel from '../components/chat/LiveChatPanel'; 
 
 export default function Workspace() {
   const [activeTab, setActiveTab] = useState('editor');
@@ -46,7 +47,7 @@ export default function Workspace() {
       case 'whiteboard':
         return <div className="text-ghost-white p-8">Whiteboard Component goes here...</div>;
       case 'chat':
-        return <div className="text-ghost-white p-8">Live Chat Component goes here...</div>;
+        return <LiveChatPanel/>
       case 'info':
         return <div className="text-ghost-white p-8">Room Info Component goes here...</div>;
       default:

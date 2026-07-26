@@ -8,6 +8,8 @@ const ACTIONS={
     FOLDER_DELETED:"folder-deleted",
     RECEIVE_FILE_CREATED:"receive-file-created",
     RECEIVE_FOLDER_CREATED:"receive-folder-created",
-    RECEIVE_NODE_DELETED:"receive-node-deleted"
+    RECEIVE_NODE_DELETED:"receive-node-deleted",
+    FILE_UPDATED:"file-updated",
+    RECEIVE_FILE_UPDATED:"receive-file-updated"
 }
 export default ACTIONS;
