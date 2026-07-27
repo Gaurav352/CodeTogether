@@ -3,12 +3,12 @@ import Room from "../models/room.model.js";
 import Message from "../models/Message.model.js";
 import { io } from "../socket/socket.js";
 import { uploadToCloudinary } from "../utils/cloudinary.js";
-
+import ACTIONS from "../../../socketEvents.js";
 
 export const sendMessage = async (req, res) => {
     try {
         const roomId = req.params.roomId;
-        const { message } = req.body;
+        const { text } = req.body;
         const files = req.files;
         if(files?.length>5){
             return res.status(400).json({
@@ -18,7 +18,7 @@ export const sendMessage = async (req, res) => {
         }
         console.log(req.files);
 
-        if ((!message || message.trim().length === 0) && (!files || files.length === 0)) {
+        if ((!text || text.trim().length === 0) && (!files || files.length === 0)) {
             return res.status(400).json({ success: false, message: "Message cannot be empty" });
         }
         const room = await Room.findById(roomId);
@@ -70,11 +70,11 @@ export const sendMessage = async (req, res) => {
         const newMessage = await Message.create({
             roomId,
             senderId: req.user._id,
-            text: message || '',
+            text: text || '',
             attachments: attachments
         })
         const msg = await newMessage.populate("senderId", "fullName");
-        io.to(roomId).emit("RECEIVE_MESSAGE", msg);
+        io.to(roomId).emit(ACTIONS.RECEIVE_MESSAGE,{msg});
         return res.status(201).json({
             success: true,
             msg
@@ -100,7 +100,7 @@ export const getAllMessages = async (req, res) => {
             })
         }
         const messages = await Message.find({ roomId: roomId })
-            .populate("senderId", "fullName _id")
+            .populate("senderId", "fullName")
             .sort({ createdAt: 1 });
         return res.status(200).json({
             message: "Fetched all messages",

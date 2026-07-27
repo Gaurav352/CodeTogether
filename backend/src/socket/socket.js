@@ -69,6 +69,9 @@ io.on("connection", (socket) => {
     socket.on(ACTIONS.FILE_UPDATED, ({ fileId, content, roomId }) => {
         socket.to(roomId).emit(ACTIONS.RECEIVE_FILE_UPDATED, {fileId,content});
     });
+    socket.on(ACTIONS.SEND_MESSAGE,({roomId,formData,tempId})=>{
+        
+    })
 
     socket.on("disconnecting", () => {
         const rooms = [...socket.rooms];

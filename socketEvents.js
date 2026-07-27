@@ -10,6 +10,8 @@ const ACTIONS={
     RECEIVE_FOLDER_CREATED:"receive-folder-created",
     RECEIVE_NODE_DELETED:"receive-node-deleted",
     FILE_UPDATED:"file-updated",
-    RECEIVE_FILE_UPDATED:"receive-file-updated"
+    RECEIVE_FILE_UPDATED:"receive-file-updated",
+    SEND_MESSAGE:"send-message",
+    RECEIVE_MESSAGE:"receive-message"
 }
 export default ACTIONS;
