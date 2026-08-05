@@ -9,6 +9,7 @@ const fileSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
+    yjsState: { type: Buffer, default: null },
     folder: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Folder",

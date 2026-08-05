@@ -13,7 +13,11 @@ const useSocketStore = create((set, get) => ({
       query: { 
         userId, 
         fullName 
-      }
+      },
+      reconnection: true,         
+      reconnectionAttempts: Infinity, 
+      reconnectionDelay: 1000,        
+      reconnectionDelayMax: 5000,
     });
 
     set({ socket: newSocket });

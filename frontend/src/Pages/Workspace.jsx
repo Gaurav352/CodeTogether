@@ -9,6 +9,7 @@ import { useParams } from 'react-router-dom';
 import useEditorStore from '../zustand/useEditorStore';
 import LiveChatPanel from '../components/chat/LiveChatPanel'; 
 import useChatStore from '../zustand/useChatStore';
+import ACTIONS from "../../../socketEvents.js";
 
 export default function Workspace() {
   const [activeTab, setActiveTab] = useState('editor');
@@ -16,31 +17,38 @@ export default function Workspace() {
   const { roomId } = useParams();
   const { socket, connect, disconnect } = useSocketStore();
   const {initChatListeners, cleanupChatListeners} = useChatStore();
-  const {initEditorListeners, cleanupEditorListeners} = useEditorStore();
-  const { initWorkspaceListeners, cleanupWorkspaceListeners, setRoomId } = useWorkspaceStore();
+  const {initEditorListeners, cleanupEditorListeners, resetEditorState} = useEditorStore();
+  const { initWorkspaceListeners, cleanupWorkspaceListeners, setRoomId,fetchCurrentRoom } = useWorkspaceStore();
 
   useEffect(() => {
     if (authUser && roomId) {
       setRoomId(roomId);
       connect(authUser._id, authUser.fullName); 
+      const res=fetchCurrentRoom(roomId);
     }
     return () => {
       disconnect();
     };
   }, [authUser, roomId, connect, disconnect])
   useEffect(() => {
-    if (socket && roomId) {
+    if (!socket || !roomId)return ; 
+      
       initWorkspaceListeners(roomId);
       initEditorListeners();
       initChatListeners();
 
-    }
+      const handleServerReconnect = () => {
+        socket.emit(ACTIONS.JOIN_ROOM, { roomId });
+      };
+      socket.on("connect",handleServerReconnect);
     return () => {
+      socket.off("connect", handleServerReconnect);
       cleanupWorkspaceListeners();
       cleanupEditorListeners();
       cleanupChatListeners();
+      resetEditorState();
     };
-  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners,initEditorListeners]);
+  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners,initEditorListeners,resetEditorState]);
   const handleLeaveRoom = () => {
     navigate('/dashboard'); 
   };

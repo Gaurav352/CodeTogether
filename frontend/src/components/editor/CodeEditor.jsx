@@ -55,7 +55,6 @@ export default function CodeEditor({ roomId }) {
              <MonacoWindow 
                theme={theme} 
                language={activeFile.language || language} 
-               activeFile={activeFile.name} 
              />
           ) : (
             <div className="h-full flex items-center justify-center font-mono text-ghost-white/40">

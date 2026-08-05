@@ -169,29 +169,53 @@ export const leaveRoom = async (req, res) => {
 export const getRoomById = async (req, res) => {
     try {
         const roomID = req.params.roomId;
+        
         if (!roomID) {
+            return res.status(400).json({
+                message: "Room Id is required!"
+            });
+        }
+
+        const room = await Room.findById(roomID)
+            .populate('owner', 'name email profilePicture') 
+            .populate('members', 'name email profilePicture');
+
+        if (!room) {
             return res.status(404).json({
-                message: "Room Id not found!"
-            })
-        }
-        const room = await Room.findById(roomID);
-        if (!room.members.includes(req.user._id)) {
-            return res.status(403).json({
-                message: "Unauthorized to access!",
+                message: "Room not found!",
                 success: false
-            })
+            });
         }
+
+        const userId = req.user._id.toString();
+        const isMember = room.members.some(member => member._id.toString() === userId);
+        const isOwner = room.owner._id.toString() === userId;
+
+        if (!isMember && !isOwner) {
+            return res.status(403).json({
+                message: "Unauthorized! You are not a member of this workspace.",
+                success: false
+            });
+        }
+        const roomData = room.toObject();
+        roomData.members = roomData.members.filter(
+            (member) => member._id.toString() !== roomData.owner._id.toString()
+        );
+
         return res.status(200).json({
             message: "Fetched room data successfully!",
             success: true,
-            room
-        })
+            room: roomData
+        });
+
     } catch (error) {
-        console.error("Getroom by Id error:", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        console.error("Get Room by Id Error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Internal server error" 
+        });
     }
 }
-
 export const invite = async (req, res) => {
     try {
 

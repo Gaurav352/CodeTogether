@@ -5,6 +5,8 @@ import useSocketStore from "./useSocketStore";
 import toast from "react-hot-toast";
 import getFileLanguage from "../lib/detectLanguage";
 import ACTIONS from "../../../socketEvents.js";
+import * as Y from "yjs";
+import { SocketYjsProvider } from "../lib/yjsSocketProvider";
 
 const useEditorStore = create((set, get) => ({
     fileTree: [],
@@ -12,6 +14,7 @@ const useEditorStore = create((set, get) => ({
     activeFile: null,
     isTreeLoading: false,
     hasFetchedFiles: false,
+    docs:{},
     fetchFileTree: async (roomId) => {
         if (get().hasFetchedFiles) return;
         try {
@@ -31,6 +34,35 @@ const useEditorStore = create((set, get) => ({
     },
     setActiveFile: (fileNode) => {
         set({ activeFile: fileNode });
+        if (fileNode?._id) {
+            get().openDoc(fileNode._id);
+        }
+    },
+
+    openDoc: (fileId) => {
+        const { docs } = get();
+        if (docs[fileId]) return docs[fileId]; // already open, reuse
+
+        const socket = useSocketStore.getState().socket;
+        if (!socket) return null;
+
+        const ydoc = new Y.Doc();
+        const provider = new SocketYjsProvider(socket, fileId, ydoc);
+        const entry = { ydoc, provider };
+
+        set((state) => ({ docs: { ...state.docs, [fileId]: entry } }));
+        return entry;
+    },
+    closeDoc: (fileId) => {
+        const entry = get().docs[fileId];
+        if (!entry) return;
+        entry.provider.destroy();
+        entry.ydoc.destroy();
+        set((state) => {
+            const next = { ...state.docs };
+            delete next[fileId];
+            return { docs: next };
+        });
     },
     fetchFileContent: async () => {
         const { fileCache, activeFile } = get();
@@ -38,10 +70,7 @@ const useEditorStore = create((set, get) => ({
         const fileId = activeFile._id;
         if (fileCache[fileId]) {
             set((state) => ({
-                activeFile: {
-                    ...state.activeFile,
-                    content: fileCache[fileId]
-                }
+                activeFile: { ...state.activeFile, content: fileCache[fileId] }
             }));
             return;
         }
@@ -49,12 +78,9 @@ const useEditorStore = create((set, get) => ({
             const res = await axiosInstance.get(`/folder/getFileContent/${get().activeFile._id}`);
             if (res.data.success) {
                 const fileData = res.data.file;
-                set((state)=>({
+                set((state) => ({
                     activeFile: fileData,
-                    fileCache:{
-                        ...state.fileCache,
-                        fileId:fileData.content
-                    }
+                    fileCache: { ...state.fileCache, [fileData._id]: fileData.content }
                 }));
             }
         } catch (error) {
@@ -62,18 +88,13 @@ const useEditorStore = create((set, get) => ({
             toast.error(error.response?.data?.message || "Failed to fetch file content");
         }
     },
-    updateFileContent:(fileId,newContent,roomId,skipEmit=false)=>{
-        set((state)=>({
-            activeFile:state.activeFile?._id===fileId?{...state.activeFile,content:newContent}:state.activeFile,
-            fileCache:{
-                ...state.fileCache,
-                [fileId]:newContent
-            }
+    updateFileContent: (fileId, newContent) => {
+        set((state) => ({
+            activeFile: state.activeFile?._id === fileId
+                ? { ...state.activeFile, content: newContent }
+                : state.activeFile,
+            fileCache: { ...state.fileCache, [fileId]: newContent }
         }));
-        const socket = useSocketStore.getState().socket;
-        if(!skipEmit && socket && roomId){
-            socket.emit(ACTIONS.FILE_UPDATED,{fileId,content:newContent,roomId});
-        }
     },
     toggleFolder: (folderId) => {
         set((state) => {
@@ -201,7 +222,6 @@ const useEditorStore = create((set, get) => ({
         socket.off(ACTIONS.RECEIVE_FILE_CREATED);
         socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
         socket.off(ACTIONS.RECEIVE_NODE_DELETED);
-        socket.off(ACTIONS.RECEIVE_FILE_UPDATED);
         socket.on(ACTIONS.RECEIVE_FILE_CREATED, ({ newNode, parentId }) => {
             const nodeWithType = { ...newNode, type: 'file' };
             get().addNodeToTree(nodeWithType, parentId);
@@ -214,17 +234,33 @@ const useEditorStore = create((set, get) => ({
         socket.on(ACTIONS.RECEIVE_NODE_DELETED, ({ nodeId }) => {
             get().removeNodeFromTree(nodeId);
         })
-        socket.on(ACTIONS.RECEIVE_FILE_UPDATED, ({ fileId, content }) => {
-            get().updateFileContent(fileId, content,null,true);
-        });
     },
+    resetEditorState: () => {
+    const { docs } = get();
+    
+    Object.values(docs).forEach(entry => {
+      if (entry.provider) {
+        entry.provider.awareness.destroy(); // Destroy cursor awareness
+        entry.provider.destroy();           // Disconnect sync provider
+      }
+      if (entry.ydoc) {
+        entry.ydoc.destroy();               // Destroy the document completely
+      }
+    });
+
+    // 2. Wipe the Zustand state clean for the next time they enter a room
+    set({ 
+      docs: {}, 
+      activeFile: null 
+    });
+  },
     cleanupEditorListeners: () => {
         const socket = useSocketStore.getState().socket;
         if (!socket) return;
         socket.off(ACTIONS.RECEIVE_FILE_CREATED);
         socket.off(ACTIONS.RECEIVE_FOLDER_CREATED);
         socket.off(ACTIONS.RECEIVE_NODE_DELETED);
-        socket.off(ACTIONS.RECEIVE_FILE_UPDATED);
+        Object.keys(get().docs).forEach((fileId) => get().closeDoc(fileId));
     },
 }));
 export default useEditorStore;

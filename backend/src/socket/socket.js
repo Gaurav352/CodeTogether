@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import ACTIONS from "../../../socketEvents.js";
+import { registerYjsHandlers, sweepIdleDocs } from "../yjs/collab.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -15,6 +16,7 @@ const io = new Server(server, {
 
 // Store socketId -> { userId, fullName }
 const userSocketMap = {};
+const roomUserIds = {};
 
 function getUsersInRoom(roomId, socketIdToIgnore = null) {
     const room = io.sockets.adapter.rooms.get(roomId);
@@ -22,17 +24,14 @@ function getUsersInRoom(roomId, socketIdToIgnore = null) {
 
     const roomSocketIds = Array.from(room);
 
-    const activeSocketIds = socketIdToIgnore 
+    const activeSocketIds = socketIdToIgnore
         ? roomSocketIds.filter(id => id !== socketIdToIgnore)
         : roomSocketIds;
 
-    // 3. Map active sockets to User Data
     const users = activeSocketIds
         .map(socketId => userSocketMap[socketId])
-        .filter(user => user !== undefined); // Remove undefined/nulls
+        .filter(user => user !== undefined); 
 
-    // 4. Deduplicate Users by userId
-    // This ensures that if a user has 2 tabs open, they are only listed ONCE.
     const uniqueUsers = [];
     const processedUserIds = new Set();
 
@@ -50,6 +49,7 @@ io.on("connection", (socket) => {
     // 1. Capture User Info from Query Params
     const userId = socket.handshake.query.userId;
     const fullName = socket.handshake.query.fullName;
+    registerYjsHandlers(io, socket);
 
     if (userId && fullName && userId !== "undefined") {
         userSocketMap[socket.id] = { userId, fullName };
@@ -60,36 +60,53 @@ io.on("connection", (socket) => {
     socket.on(ACTIONS.JOIN_ROOM, ({ roomId }) => {
         socket.join(roomId);
         console.log("joining");
-        
+
+        if (!roomUserIds[roomId]) {
+            roomUserIds[roomId] = new Set();
+        }
+
+        const isNewMember = !roomUserIds[roomId].has(userId);
+        roomUserIds[roomId].add(userId);
+
         const users = getUsersInRoom(roomId);
-        
         io.in(roomId).emit(ACTIONS.GET_ONLINE_USERS, users);
-        socket.to(roomId).emit(ACTIONS.USER_JOINED, { fullName });
+
+        if (isNewMember) {
+            socket.to(roomId).emit(ACTIONS.USER_JOINED, { fullName });
+        }
     });
-    socket.on(ACTIONS.FILE_UPDATED, ({ fileId, content, roomId }) => {
-        socket.to(roomId).emit(ACTIONS.RECEIVE_FILE_UPDATED, {fileId,content});
-    });
-    socket.on(ACTIONS.SEND_MESSAGE,({roomId,formData,tempId})=>{
-        
+    socket.on(ACTIONS.SEND_MESSAGE, ({ roomId, formData, tempId }) => {
+
     })
 
     socket.on("disconnecting", () => {
         const rooms = [...socket.rooms];
-        
+
         rooms.forEach((roomId) => {
-            // Check if this is a real room (socket.io creates a default room for the socket.id)
             if (roomId !== socket.id) {
-                // Calculate what the room looks like WITHOUT this specific socket
                 const remainingUsers = getUsersInRoom(roomId, socket.id);
-                
-                // Send the updated list to the remaining people in the room
                 socket.in(roomId).emit("UPDATE_USER_LIST", remainingUsers);
+
+                const stillPresent = remainingUsers.some(u => u.userId === userId);
+                if (!stillPresent && roomUserIds[roomId]) {
+                    setTimeout(() => {
+                        const usersNow = getUsersInRoom(roomId); // re-check current state
+                        const backAgain = usersNow.some(u => u.userId === userId);
+                        if (!backAgain && roomUserIds[roomId]) {
+                            roomUserIds[roomId].delete(userId);
+                            if (roomUserIds[roomId].size === 0) delete roomUserIds[roomId];
+                        }
+                    }, 5000); 
+                }
             }
         });
 
-        // Finally, remove from global map
         delete userSocketMap[socket.id];
     });
+    
 });
+setInterval(() => {
+        sweepIdleDocs(io);
+}, 60_000);
 
 export { app, io, server };

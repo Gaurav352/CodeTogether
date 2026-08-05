@@ -11,6 +11,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen
 } from 'lucide-react';
+import useSocketStore from '../../zustand/useSocketStore';
 
 export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -22,6 +23,10 @@ export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
     { id: 'chat', label: 'Live Chat', icon: MessageSquare },
     { id: 'info', label: 'Room Info', icon: Info },
   ];
+
+  const handleLeaveRoom = ()=>{
+    useSocketStore.getState().disconnect();
+  }
 
   return (
     <div 
@@ -107,7 +112,7 @@ export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
         </button>
 
         <button 
-          onClick={() => navigate('/dashboard')}
+          onClick={handleLeaveRoom}
           title={isCollapsed ? "Leave Room" : ""}
           className={`flex items-center p-3 rounded-xl text-[#ff4d4d]/70 hover:text-[#ff4d4d] hover:bg-[#ff4d4d]/10 transition-colors w-full ${
             isCollapsed ? 'justify-center' : 'justify-center lg:justify-start gap-4'

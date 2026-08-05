@@ -8,7 +8,7 @@ router.post("/create",createRoom);
 router.post("/invite",invite);
 router.post("/deleteRoom",deleteRoom);
 router.get("/getAllRooms",getAllRooms);
-router.post("/getRoomById/:roomId",getRoomById);
+router.get("/getRoomById/:roomId",getRoomById);
 router.post("leave",leaveRoom);
 router.post("/sendJoinRequest",sendJoinRequest);
 router.post('/getJoinRequests/:roomId',getJoinRequest);

@@ -95,7 +95,7 @@ const useChatStore = create((set, get) => ({
         const socket = useSocketStore.getState().socket;
         if(!socket || !authUser)return;
         socket.off(ACTIONS.RECEIVE_MESSAGE);
-        socket.on(ACTIONS.RECERIVE_MESSAGE,({msg})=>{
+        socket.on(ACTIONS.RECEIVE_MESSAGE,({msg})=>{
             if(msg.senderId._id === authUser._id){
                 return ;
             }

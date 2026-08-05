@@ -5,6 +5,6 @@ import upload from "../middlewares/multer.js";
 
 const router=Router();
 router.use(protectRoute);
-router.post(`/send/:roomId`,upload.array("files", 5),sendMessage);
+router.post(`/send/:roomId`,upload.array("attachments", 5),sendMessage);
 router.get('/allMessages/:roomId',getAllMessages);
 export default router;

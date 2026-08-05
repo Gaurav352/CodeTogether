@@ -52,9 +52,9 @@ export const register = async (req, res) => {
 
         await newUser.save();
 
-        const userObj = newUser.toObject();
-        delete userObj.password;
-        return res.status(201).json({userObj,success:true,message:"Register Successfull"});
+        const user = newUser.toObject();
+        delete user.password;
+        return res.status(201).json({user,success:true,message:"Register Successfull"});
     } catch (error) {
         console.log("Error in register controller ", error);
         res.status(500).json({ message: error.message });
@@ -63,7 +63,6 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
     try {
         const { email, password } = req.body;
-        console.log(password);
         if (!email || !password) {
             return res.status(400).json({
                 message: "Please Provide all fields",
@@ -86,7 +85,6 @@ export const login = async (req, res) => {
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
             expiresIn: "7d"
         })
-        console.log(token);
         res.cookie("jwt", token, {
             maxAge: 7 * 24 * 60 * 60 * 1000,
             httpOnly: true,

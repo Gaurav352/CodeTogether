@@ -12,6 +12,12 @@ const ACTIONS={
     FILE_UPDATED:"file-updated",
     RECEIVE_FILE_UPDATED:"receive-file-updated",
     SEND_MESSAGE:"send-message",
-    RECEIVE_MESSAGE:"receive-message"
+    RECEIVE_MESSAGE:"receive-message",
+    DOC_JOIN:"doc:join",
+    DOC_SYNC:"doc:sync",
+    DOC_UPDATE:"doc:update",
+    DOC_AWARENESS:"doc:awareness",
+    DOC_ERROR:"doc:error",
+    DOC_LEAVE:"doc:leave"
 }
 export default ACTIONS;

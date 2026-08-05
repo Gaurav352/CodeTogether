@@ -12,7 +12,7 @@ import {server,app} from "./socket/socket.js";
 dotenv.config();
 const PORT=process.env.PORT || 7000;
 app.use(cors({
-    origin:'http://localhost:5173',
+    origin:['http://localhost:5173','http://172.23.177.67:5173'],
     methods:["PUT","PATCH","POST","DELETE","GET"],
     credentials:true
 }))

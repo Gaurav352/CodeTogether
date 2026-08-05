@@ -24,14 +24,12 @@ export default function LiveChatPanel() {
     useEffect(() => {
         if (!roomId) return;
 
-        if (messages.length === 0) {
-            fetchMessages(roomId);
-        }
+        fetchMessages(roomId);
+        
 
         initChatListeners();
     }, [roomId, messages.length, fetchMessages, initChatListeners]);
 
-    // 2. Auto-scroll to bottom when messages change
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -79,14 +77,15 @@ export default function LiveChatPanel() {
     };
 
     return (
-        <div className="flex flex-col h-full w-full bg-[#1A1A1F] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#982598]/10 via-[#1A1A1F] to-[#1A1A1F] text-[#F1E9E9] font-sans overflow-hidden relative">
+        // 1. We use `absolute inset-0 flex flex-col` so it perfectly fills the right-side panel without breaking.
+        <div className="absolute inset-0 flex flex-col bg-[#1A1A1F] bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-[#982598]/10 via-[#1A1A1F] to-[#1A1A1F] text-[#F1E9E9] font-sans overflow-hidden">
 
             {/* Hidden File Inputs */}
             <input type="file" multiple ref={fileInputRef} className="hidden" onChange={handleFileChange} />
             <input type="file" multiple accept="image/*" ref={imageInputRef} className="hidden" onChange={handleFileChange} />
 
-            {/* Floating Glass Header */}
-            <div className="px-4 sm:px-6 py-3 border-b border-white/5 bg-[#1A1A1F]/70 backdrop-blur-xl sticky top-0 z-20 flex justify-between items-center shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
+            {/* 2. Floating Glass Header -> Now `flex-none` so it never shrinks */}
+            <div className="flex-none px-4 sm:px-6 py-3 border-b border-white/5 bg-[#1A1A1F]/70 backdrop-blur-xl z-20 flex justify-between items-center shadow-[0_4px_30px_rgba(0,0,0,0.3)]">
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-gradient-to-br from-[#982598]/20 to-[#E491C9]/20 border border-white/5">
                         <Zap className="w-4 h-4 text-[#E491C9]" />
@@ -98,8 +97,8 @@ export default function LiveChatPanel() {
                 </div>
             </div>
 
-            {/* Message Feed */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar flex flex-col pb-36">
+            {/* 3. Message Feed -> `flex-1` makes this the ONLY part of the screen that scrolls! */}
+            <div className="flex-1 overflow-y-auto px-4 sm:px-6 pt-4 sm:pt-6 pb-2 space-y-6 custom-scrollbar flex flex-col">
 
                 {/* Empty State */}
                 {messages.length === 0 && (
@@ -113,9 +112,6 @@ export default function LiveChatPanel() {
                 )}
 
                 {messages.map((msg, index) => {
-                    // ==========================================
-                    // FIXED: Extracting data from populated object
-                    // ==========================================
                     const senderIdStr = msg.senderId?._id || msg.senderId;
                     const senderName = msg.senderId?.fullName || "Unknown";
                     const isMe = senderIdStr === authUser?._id;
@@ -135,23 +131,18 @@ export default function LiveChatPanel() {
                                         ? 'bg-gradient-to-br from-[#982598] to-[#E491C9] text-white'
                                         : 'bg-[#2D2D35] text-[#F1E9E9]/80 border border-white/10'
                                     }`}>
-                                    {/* FIXED: Uses extracted senderName */}
                                     {senderName.charAt(0).toUpperCase()}
                                 </div>
 
                                 {/* Message Content */}
                                 <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-
                                     {/* Sender Name & Time */}
                                     <div className={`flex items-baseline gap-2 mb-1 px-1 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
                                         <span className="text-[11px] sm:text-xs font-semibold text-[#F1E9E9]/80">
-                                            {/* FIXED: Uses extracted senderName */}
                                             {isMe ? "You" : senderName}
                                         </span>
                                         <span className="text-[9px] sm:text-[10px] text-[#F1E9E9]/40 flex items-center gap-1">
                                             {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-
-                                            {/* Optimistic UI Status Indicators */}
                                             {isMe && msg.status === "sending" && <Clock className="w-3 h-3 text-white/40" />}
                                             {isMe && msg.status === "sent" && <Check className="w-3 h-3 text-[#E491C9]" />}
                                             {isMe && msg.status === "failed" && <AlertCircle className="w-3 h-3 text-red-400" />}
@@ -159,13 +150,11 @@ export default function LiveChatPanel() {
                                     </div>
 
                                     {/* Bubble */}
-                                    {/* Bubble */}
                                     <div className={`px-3 py-2 sm:px-4 sm:py-2.5 shadow-lg backdrop-blur-sm w-fit ${isMe
                                             ? 'bg-gradient-to-br from-[#982598] to-[#E491C9] text-white rounded-2xl rounded-tr-sm'
                                             : 'bg-[#25252B] border border-white/5 text-[#F1E9E9]/90 rounded-2xl rounded-tl-sm'
                                         } ${msg.status === "failed" ? 'opacity-50 border-red-500/50' : ''}`}>
 
-                                        {/* Text Payload */}
                                         {msg.text && (
                                             <p className="text-[13px] sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
                                                 {msg.text}
@@ -173,52 +162,63 @@ export default function LiveChatPanel() {
                                         )}
 
                                         {/* Attachments Payload */}
-                                        {msg.attachments && msg.attachments.length > 0 && (
-                                            // The mt-2 here ensures attachments have spacing from the text above them!
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                                {msg.attachments.map((att, i) => {
-                                                    const isImage = att.fileType?.startsWith('image/') || att.fileUrl?.match(/\.(jpeg|jpg|gif|png)$/i);
+{msg.attachments && msg.attachments.length > 0 && (
+    <div className="flex flex-wrap gap-2 mt-2">
+        {msg.attachments.map((att, i) => {
+            // Unify URL & Name extraction
+            const fileLink = att.url || att.fileUrl;
+            const displayName = att.originalName || att.name || att.fileName || "File Attachment";
+            
+            // Check if it's an image just to show a different icon (optional but looks nice)
+            const isImage = att.fileType === 'image' || att.fileType?.startsWith('image/') || fileLink?.match(/\.(jpeg|jpg|gif|png|webp)$/i);
 
-                                                    return isImage ? (
-                                                        <img
-                                                            key={i}
-                                                            src={att.fileUrl}
-                                                            alt="attachment"
-                                                            onClick={() => window.open(att.fileUrl, '_blank')}
-                                                            className="w-32 h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity border border-white/10"
-                                                        />
-                                                    ) : (
-                                                        <div
-                                                            key={i}
-                                                            onClick={() => window.open(att.fileUrl, '_blank')}
-                                                            className={`flex items-center gap-3 p-2.5 sm:p-3 rounded-xl w-full max-w-[250px] ${isMe ? 'bg-black/20' : 'bg-[#1A1A1F]/80'} cursor-pointer hover:opacity-80 transition-all active:scale-95 border border-white/5`}
-                                                        >
-                                                            <div className={`p-2 rounded-lg ${isMe ? 'bg-white/20' : 'bg-[#982598]/20 text-[#E491C9]'}`}>
-                                                                <FileCode2 className="w-4 h-4 sm:w-5 sm:h-5" />
-                                                            </div>
-                                                            <div className="overflow-hidden">
-                                                                <p className="text-xs sm:text-sm font-medium truncate">{att.fileName}</p>
-                                                                <p className="text-[10px] sm:text-[11px] opacity-70 mt-0.5">Click to open</p>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
+            return (
+                <div
+                    key={i}
+                    onClick={() => window.open(fileLink, '_blank')}
+                    className={`flex items-center gap-2.5 p-2 sm:p-2.5 rounded-xl w-fit min-w-[140px] max-w-[220px] ${
+                        isMe ? 'bg-black/20 hover:bg-black/30' : 'bg-[#1A1A1F]/80 hover:bg-black/40'
+                    } cursor-pointer transition-all active:scale-95 border border-white/5 shadow-sm`}
+                    title={displayName} // Shows full name on native hover
+                >
+                    {/* Icon Box */}
+                    <div className={`p-1.5 rounded-lg flex-shrink-0 ${isMe ? 'bg-white/20 text-white' : 'bg-[#982598]/20 text-[#E491C9]'}`}>
+                        {isImage ? (
+                            <ImageIcon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                        ) : (
+                            <FileCode2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
+                        )}
+                    </div>
+                    
+                    {/* Text Details */}
+                    <div className="overflow-hidden flex-1">
+                        <p className="text-[11px] sm:text-xs font-medium text-[#F1E9E9] truncate">
+                            {displayName}
+                        </p>
+                        <p className="text-[9px] sm:text-[10px] text-[#F1E9E9]/50 mt-0.5">
+                            Click to view
+                        </p>
+                    </div>
+                </div>
+            );
+        })}
+    </div>
+)}
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
                     );
                 })}
-                <div ref={messagesEndRef} />
+                
+                {/* Invisible padding block at the bottom so the last message isn't squished */}
+                <div ref={messagesEndRef} className="h-2 w-full flex-shrink-0" />
             </div>
 
-            {/* Input Area */}
-            <div className="absolute bottom-0 left-0 w-full p-3 sm:p-4 bg-gradient-to-t from-[#1A1A1F] via-[#1A1A1F]/95 to-transparent pb-4 sm:pb-6">
+            {/* 4. Input Area -> Now `flex-none` and NO `absolute` positioning. It acts as a solid floor. */}
+            <div className="flex-none w-full p-3 sm:p-4 bg-[#1A1A1F]/90 backdrop-blur-md border-t border-white/5 z-10 pb-4 sm:pb-6">
                 <div className="mx-auto max-w-4xl bg-[#25252B]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-2 shadow-[0_8px_30px_rgba(0,0,0,0.4)] flex flex-col transition-all focus-within:border-[#E491C9]/50 focus-within:ring-2 focus-within:ring-[#E491C9]/20">
 
-                    {/* Selected Files Preview Row */}
                     <AnimatePresence>
                         {selectedFiles.length > 0 && (
                             <motion.div
@@ -248,7 +248,6 @@ export default function LiveChatPanel() {
                     </AnimatePresence>
 
                     <div className="flex items-end gap-2">
-                        {/* Upload Actions */}
                         <div className="hidden xs:flex items-center gap-1 pb-1 pl-1">
                             <button onClick={() => fileInputRef.current?.click()} className="p-2 text-[#F1E9E9]/40 hover:text-[#E491C9] hover:bg-[#E491C9]/10 rounded-xl transition-all">
                                 <Paperclip className="w-4.5 h-4.5" />
@@ -258,7 +257,6 @@ export default function LiveChatPanel() {
                             </button>
                         </div>
 
-                        {/* Text Input */}
                         <textarea
                             value={inputText}
                             onChange={(e) => setInputText(e.target.value)}
@@ -268,12 +266,10 @@ export default function LiveChatPanel() {
                             rows={1}
                         />
 
-                        {/* Mobile Upload Button */}
                         <button onClick={() => fileInputRef.current?.click()} className="xs:hidden p-2.5 mb-1 text-[#F1E9E9]/40 hover:text-[#E491C9]">
                             <Paperclip className="w-4.5 h-4.5" />
                         </button>
 
-                        {/* Send Button */}
                         <button
                             onClick={handleSend}
                             disabled={(!inputText.trim() && selectedFiles.length === 0) || isSending}
