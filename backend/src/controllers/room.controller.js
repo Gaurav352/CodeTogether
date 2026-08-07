@@ -10,10 +10,10 @@ function generateInviteCodeSecure() {
     return crypto.randomInt(100000, 1_000_000).toString();
 }
 
-function generateInviteLink(roomCode) {
-    const baseURL = process.env.CLIENT_BASE_URL || "http://localhost:5173";
-    return `${baseURL}/room/${roomCode}`;
-}
+export const generateInviteLink = (roomCode) => {
+    const baseURL = (process.env.CLIENT_BASE_URL || "http://localhost:5173").replace(/\/$/, "");
+    return `${baseURL}/join/${roomCode}`;
+};
 
 export const createRoom = async (req, res) => {
     try {
@@ -177,8 +177,8 @@ export const getRoomById = async (req, res) => {
         }
 
         const room = await Room.findById(roomID)
-            .populate('owner', 'name email profilePicture') 
-            .populate('members', 'name email profilePicture');
+            .populate('owner', 'fullName email profilePicture') 
+            .populate('members', 'fullName email profilePicture');
 
         if (!room) {
             return res.status(404).json({

@@ -9,13 +9,13 @@ export default function CodeEditor({ roomId }) {
   const [theme, setTheme] = useState('vs-dark'); 
   const [language, setLanguage] = useState('javascript');
 
-  const { activeFile, isTreeLoading, fetchFileTree, hasFetchedFiles } = useEditorStore();
+  const { activeFile, isTreeLoading, fetchFileTree } = useEditorStore();
 
   useEffect(() => {
-    if (roomId && !hasFetchedFiles) {
+    if (roomId) {
       fetchFileTree(roomId);
     }
-  }, [roomId, hasFetchedFiles, fetchFileTree]);
+  }, [roomId, fetchFileTree]);
 
   return (
     <div className="flex h-full w-full bg-navy text-ghost-white overflow-hidden rounded-2xl border border-brand-purple/20 shadow-2xl shadow-navy/80 relative">

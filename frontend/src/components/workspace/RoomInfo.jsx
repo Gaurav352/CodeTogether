@@ -4,10 +4,12 @@ import {
   Users, FolderGit2, Link2, Copy, CheckCircle2, 
   TerminalSquare, CalendarDays, Fingerprint 
 } from 'lucide-react';
+import useWorkspaceStore from '../../zustand/useWorkspaceStore';
 
-const RoomInfo = ({ roomData }) => {
+const RoomInfo = () => {
+  const {currentRoom}=useWorkspaceStore();
   const [copied, setCopied] = useState(false);
-  const room = roomData || {
+  const room = currentRoom || {
     name: "CodeSync Core Engine",
     roomCode: "SYNC-88X2",
     description: "Main workspace for developing the real-time collaboration features and Yjs CRDT implementations.",
@@ -111,7 +113,7 @@ const RoomInfo = ({ roomData }) => {
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center">
                 <Users className="w-6 h-6 text-brand-pink mb-2" />
-                <span className="text-2xl font-bold">{room.members?.length || 0}</span>
+                <span className="text-2xl font-bold">{room.members?.length+1 || 0}</span>
                 <span className="text-xs text-ghost-white/50">Engineers</span>
               </div>
               <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center">
@@ -132,10 +134,10 @@ const RoomInfo = ({ roomData }) => {
             {/* The Owner is always first */}
             <div className="flex items-center gap-3 p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-xl">
               <div className="w-10 h-10 rounded-full bg-brand-purple flex items-center justify-center font-bold shadow-[0_0_10px_rgba(152,37,152,0.5)]">
-                {room.owner?.name?.charAt(0).toUpperCase() || 'O'}
+                {room.owner?.fullName?.charAt(0).toUpperCase() || 'O'}
               </div>
               <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-medium truncate">{room.owner?.name || 'Owner'}</span>
+                <span className="text-sm font-medium truncate">{room.owner?.fullName || 'Owner'}</span>
                 <span className="text-[10px] text-brand-pink uppercase tracking-wider">Admin</span>
               </div>
             </div>
@@ -144,10 +146,10 @@ const RoomInfo = ({ roomData }) => {
             {room.members?.map((member, idx) => (
               <div key={idx} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/5 rounded-xl cursor-default">
                 <div className="w-10 h-10 rounded-full bg-navy border border-white/20 flex items-center justify-center font-medium text-brand-pink">
-                  {member?.name?.charAt(0).toUpperCase() || 'U'}
+                  {member?.fullName?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm truncate">{member?.name || 'Unknown User'}</span>
+                  <span className="text-sm truncate">{member?.fullName || 'Unknown User'}</span>
                   <span className="text-[10px] text-ghost-white/40">Member</span>
                 </div>
               </div>

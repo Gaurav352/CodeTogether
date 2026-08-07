@@ -13,10 +13,8 @@ const useEditorStore = create((set, get) => ({
     fileCache: {},
     activeFile: null,
     isTreeLoading: false,
-    hasFetchedFiles: false,
     docs:{},
     fetchFileTree: async (roomId) => {
-        if (get().hasFetchedFiles) return;
         try {
             set({ isTreeLoading: true });
             const res = await axiosInstance.get(`/folder/getFileTree/${roomId}`);

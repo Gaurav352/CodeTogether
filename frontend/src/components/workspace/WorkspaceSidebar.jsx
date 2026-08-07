@@ -12,11 +12,18 @@ import {
   PanelLeftOpen
 } from 'lucide-react';
 import useSocketStore from '../../zustand/useSocketStore';
+import { useSearchParams } from 'react-router-dom';
 
-export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
+export default function WorkspaceSidebar({ activeTab }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const navigate = useNavigate();
-
+  const [searchParams, setSearchParams] = useSearchParams();
+  const handleTabSwitch = (tabName) => {
+    setSearchParams((prev) => {
+      prev.set('tab', tabName);
+      return prev;
+    });
+  };
   const topOptions = [
     { id: 'editor', label: 'Code Editor', icon: Code2 },
     { id: 'whiteboard', label: 'Whiteboard', icon: Presentation },
@@ -50,7 +57,7 @@ export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
             className="text-[#F1E9E9]/60 hover:text-[#F1E9E9] transition-colors p-1"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            {isCollapsed ? <PanelLeftOpen size={24} /> : <PanelLeftClose size={24} />}
+            {isCollapsed ? <PanelLeftOpen size={24} /> : <PanelLeftClose size={24} />}  
           </button>
         </div>
 
@@ -62,7 +69,7 @@ export default function WorkspaceSidebar({ activeTab, setActiveTab }) {
           return (
             <button
               key={option.id}
-              onClick={() => setActiveTab(option.id)}
+              onClick={()=>handleTabSwitch(option.id)}
               title={isCollapsed ? option.label : ""}
               className={`relative flex items-center p-3 rounded-xl transition-colors duration-200 group w-full ${
                 isCollapsed ? 'justify-center' : 'justify-center lg:justify-start gap-4'
