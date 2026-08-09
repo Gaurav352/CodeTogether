@@ -21,6 +21,7 @@ export default function MonacoWindow({ theme, language }) {
     }
     const model = editorRef.current.getModel();
     if (!model) return;
+    model.setEOL(0);
 
     const entry = docs[fileId];
     const ytext = entry.ydoc.getText('content');

@@ -36,7 +36,6 @@ export default function LiveChatPanel({activeTab}) {
         setIsAtBottom(isNearBottom);
     };
 
-    // When opening the chat tab -> Instant jump to bottom
     useEffect(() => {
         if (activeTab === 'chat') {
             setTimeout(() => {

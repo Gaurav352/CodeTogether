@@ -18,6 +18,8 @@ const ACTIONS={
     DOC_UPDATE:"doc:update",
     DOC_AWARENESS:"doc:awareness",
     DOC_ERROR:"doc:error",
-    DOC_LEAVE:"doc:leave"
+    DOC_LEAVE:"doc:leave",
+    LEAVE_ROOM:"leave-room",
+    USER_LEFT:"user-left"
 }
 export default ACTIONS;

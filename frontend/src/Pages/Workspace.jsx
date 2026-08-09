@@ -29,13 +29,12 @@ export default function Workspace() {
       connect(authUser._id, authUser.fullName);
       const res = fetchCurrentRoom(roomId);
     }
-    return () => {
-      disconnect();
-    };
   }, [authUser, roomId, connect, disconnect])
   useEffect(() => {
     if (!socket || !roomId) return;
-
+    if (socket.connected) {
+      socket.emit(ACTIONS.JOIN_ROOM, { roomId });
+    }
     initWorkspaceListeners(roomId);
     initEditorListeners();
     initChatListeners();
@@ -50,8 +49,9 @@ export default function Workspace() {
       cleanupEditorListeners();
       cleanupChatListeners();
       resetEditorState();
+      disconnect();
     };
-  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners, initEditorListeners, resetEditorState]);
+  }, [socket, roomId, initWorkspaceListeners, cleanupWorkspaceListeners, initEditorListeners, resetEditorState,disconnect]);
   const handleLeaveRoom = () => {
     navigate('/dashboard');
   };

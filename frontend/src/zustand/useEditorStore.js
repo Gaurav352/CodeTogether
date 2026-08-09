@@ -7,13 +7,15 @@ import getFileLanguage from "../lib/detectLanguage";
 import ACTIONS from "../../../socketEvents.js";
 import * as Y from "yjs";
 import { SocketYjsProvider } from "../lib/yjsSocketProvider";
+import useAuthStore from "./authStore";
+import {colorFromId} from "../lib/colorFromId";
 
 const useEditorStore = create((set, get) => ({
     fileTree: [],
     fileCache: {},
     activeFile: null,
     isTreeLoading: false,
-    docs:{},
+    docs: {},
     fetchFileTree: async (roomId) => {
         try {
             set({ isTreeLoading: true });
@@ -46,8 +48,12 @@ const useEditorStore = create((set, get) => ({
 
         const ydoc = new Y.Doc();
         const provider = new SocketYjsProvider(socket, fileId, ydoc);
+        const currentUser = useAuthStore.getState().authUser;
+        provider.awareness.setLocalStateField('user', {
+            name: currentUser.fullName,
+            color: colorFromId(currentUser._id),
+        });
         const entry = { ydoc, provider };
-
         set((state) => ({ docs: { ...state.docs, [fileId]: entry } }));
         return entry;
     },
@@ -234,24 +240,23 @@ const useEditorStore = create((set, get) => ({
         })
     },
     resetEditorState: () => {
-    const { docs } = get();
-    
-    Object.values(docs).forEach(entry => {
-      if (entry.provider) {
-        entry.provider.awareness.destroy(); // Destroy cursor awareness
-        entry.provider.destroy();           // Disconnect sync provider
-      }
-      if (entry.ydoc) {
-        entry.ydoc.destroy();               // Destroy the document completely
-      }
-    });
+        const { docs } = get();
 
-    // 2. Wipe the Zustand state clean for the next time they enter a room
-    set({ 
-      docs: {}, 
-      activeFile: null 
-    });
-  },
+        Object.values(docs).forEach(entry => {
+            if (entry.provider) {
+                entry.provider.awareness.destroy(); // Destroy cursor awareness
+                entry.provider.destroy();           // Disconnect sync provider
+            }
+            if (entry.ydoc) {
+                entry.ydoc.destroy();               // Destroy the document completely
+            }
+        });
+
+        set({
+            docs: {},
+            activeFile: null
+        });
+    },
     cleanupEditorListeners: () => {
         const socket = useSocketStore.getState().socket;
         if (!socket) return;

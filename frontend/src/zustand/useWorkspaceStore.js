@@ -5,21 +5,21 @@ import ACTIONS from "../../../socketEvents.js";
 import axiosInstance from "../lib/axios";
 
 const useWorkspaceStore = create((set, get) => ({
-    roomId:null,
+    roomId: null,
     activeUsers: [],
     isListening: false,
-    currentRoom:null,
+    currentRoom: null,
     setRoomId: (roomId) => set({ roomId: roomId }),
-    fetchCurrentRoom:async ()=>{
-        const roomId=get().roomId;
-        if(!roomId)return false;
-        try{
-            const res=await axiosInstance.get(`/room/getRoomById/${roomId}`);
-            if(res.data.success){
-                set({currentRoom:res.data.room});
+    fetchCurrentRoom: async () => {
+        const roomId = get().roomId;
+        if (!roomId) return false;
+        try {
+            const res = await axiosInstance.get(`/room/getRoomById/${roomId}`);
+            if (res.data.success) {
+                set({ currentRoom: res.data.room });
                 return true;
             }
-        } catch (error){
+        } catch (error) {
             console.log("Error in fetching current room ", error);
             toast.error(error.response?.data?.message || "Failed to fetch current room");
             return false;
@@ -40,6 +40,9 @@ const useWorkspaceStore = create((set, get) => ({
                     border: '1px solid #982598'
                 }
             });
+        });
+        socket.on(ACTIONS.USER_LEFT, ({ fullName }) => {
+            toast(`${fullName} left the room`, { icon: '👋' });
         });
         set({ isListening: true });
     },

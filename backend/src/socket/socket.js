@@ -30,7 +30,7 @@ function getUsersInRoom(roomId, socketIdToIgnore = null) {
 
     const users = activeSocketIds
         .map(socketId => userSocketMap[socketId])
-        .filter(user => user !== undefined); 
+        .filter(user => user !== undefined);
 
     const uniqueUsers = [];
     const processedUserIds = new Set();
@@ -75,9 +75,25 @@ io.on("connection", (socket) => {
             socket.to(roomId).emit(ACTIONS.USER_JOINED, { fullName });
         }
     });
-    socket.on(ACTIONS.SEND_MESSAGE, ({ roomId, formData, tempId }) => {
 
-    })
+    socket.on(ACTIONS.LEAVE_ROOM, ({ roomId }) => {
+        if (!roomId) return;
+
+        socket.leave(roomId);
+        console.log(`Socket ${socket.id} left room ${roomId}`);
+
+        const remainingUsers = getUsersInRoom(roomId, socket.id);
+        const stillPresent = remainingUsers.some(u => u.userId === userId);
+
+        if (!stillPresent && roomUserIds[roomId]) {
+            roomUserIds[roomId].delete(userId);
+            if (roomUserIds[roomId].size === 0) {
+                delete roomUserIds[roomId];
+            }
+        }
+        io.in(roomId).emit(ACTIONS.GET_ONLINE_USERS, remainingUsers);
+        socket.to(roomId).emit(ACTIONS.USER_LEFT, { fullName });
+    });
 
     socket.on("disconnecting", () => {
         const rooms = [...socket.rooms];
@@ -96,17 +112,17 @@ io.on("connection", (socket) => {
                             roomUserIds[roomId].delete(userId);
                             if (roomUserIds[roomId].size === 0) delete roomUserIds[roomId];
                         }
-                    }, 5000); 
+                    }, 5000);
                 }
             }
         });
 
         delete userSocketMap[socket.id];
     });
-    
+
 });
 setInterval(() => {
-        sweepIdleDocs(io);
+    sweepIdleDocs(io);
 }, 60_000);
 
 export { app, io, server };
