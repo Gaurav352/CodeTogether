@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import useAuthStore from '../../zustand/authStore';
 import { notify } from '../../lib/notifyHelper';
 import toast from 'react-hot-toast';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 export default function AuthForm() {
     const { login, register, authLoading } = useAuthStore();
     const [isLogin, setIsLogin] = useState(true);
@@ -11,6 +13,9 @@ export default function AuthForm() {
         password: '',
         fullName: ''
     })
+    const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const redirectTo = searchParams.get('redirect') || '/dashboard';
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -42,6 +47,7 @@ export default function AuthForm() {
                 : `Welcome to CodeSync ${res.user.fullName}`,
             "success"
         );
+        navigate(redirectTo);
     };
 
     const handleGoogleLogin = () => {

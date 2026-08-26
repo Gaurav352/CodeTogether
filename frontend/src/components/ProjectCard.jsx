@@ -16,25 +16,17 @@ export default function ProjectCard({ project }) {
     year: 'numeric'
   });
 
-  const handleCopyLink = () => {
-    const linkToCopy = project.inviteLink || `https://codesync.app/join/${project.roomCode}`;
-    navigator.clipboard.writeText(linkToCopy);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <motion.div
       whileHover={{ y: -5, scale: 1.02 }}
       transition={{ duration: 0.2 }}
-      className="bg-navy/60 backdrop-blur-xl border border-brand-purple/30 hover:border-brand-pink/60 rounded-3xl p-6 shadow-xl shadow-navy/50 flex flex-col h-full group relative overflow-hidden"
+      className="w-full max-w-sm bg-navy/60 backdrop-blur-xl border border-brand-purple/30 hover:border-brand-pink/60 rounded-3xl p-6 shadow-xl shadow-navy/50 flex flex-col h-full group relative overflow-hidden"
     >
       {/* Background Hover Glow */}
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-pink/10 rounded-full blur-3xl group-hover:bg-brand-pink/20 transition-colors z-0"></div>
 
       <div className="relative z-10 flex flex-col h-full">
 
-        {/* Header: Name, Code & Owner Badge */}
         <div className="flex justify-between items-start mb-2 gap-4">
           <h3 className="text-2xl font-bold text-ghost-white group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-brand-pink group-hover:to-brand-purple transition-all line-clamp-1">
             {project.name}
@@ -81,32 +73,7 @@ export default function ProjectCard({ project }) {
           {description}
         </p>
         <div className="flex flex-col gap-3 mt-auto pt-4 border-t border-white/5">
-
-          <button
-            onClick={handleCopyLink}
-            className="flex items-center justify-center gap-2 w-full bg-white/5 border border-brand-purple/40 text-ghost-white/80 hover:text-brand-pink hover:border-brand-pink hover:bg-brand-pink/10 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
-          >
-            {copied ? (
-              <>
-                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-                </svg>
-                <span className="text-green-400">Link Copied!</span>
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
-                </svg>
-                Copy Invite Link
-              </>
-            )}
-          </button>
-
           <div className="flex gap-3">
-            <button className="flex-1 bg-transparent hover:bg-red-500/10 text-ghost-white/60 hover:text-red-400 border border-white/10 hover:border-red-500/50 px-4 py-2.5 rounded-xl text-sm font-bold transition-all">
-              Leave
-            </button>
             <Link
               to={`/workspace/${project._id}`}
               className="flex flex-1 items-center justify-center bg-brand-purple hover:bg-brand-pink text-ghost-white hover:text-navy px-4 py-2.5 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_rgba(152,37,152,0.3)] hover:shadow-[0_0_20px_rgba(228,145,201,0.5)]"

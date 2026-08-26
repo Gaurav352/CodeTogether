@@ -5,6 +5,9 @@ import Folder from "../models/folder.model.js";
 import File from "../models/file.model.js";
 import JoinRequest from "../models/joinRequest.model.js";
 import Whiteboard from "../models/whiteboard.model.js";
+import nodemailer from 'nodemailer';
+import Invite from "../models/joinRequest.model.js";
+import mongoose from "mongoose";
 
 function generateInviteCodeSecure() {
     return crypto.randomInt(100000, 1_000_000).toString();
@@ -99,6 +102,7 @@ export const getAllRooms = async (req, res) => {
 }
 
 export const deleteRoom = async (req, res) => {
+    let session;
     try {
         const userId = req.user?._id;
         const { roomId } = req.body;
@@ -110,7 +114,7 @@ export const deleteRoom = async (req, res) => {
         }
 
 
-        const session = await mongoose.startSession();
+        session = await mongoose.startSession();
         session.startTransaction();
         const room = await Room.findById(roomId).session(session);
         if (!room) {
@@ -149,7 +153,7 @@ export const leaveRoom = async (req, res) => {
             return res.status(401).json({ success: false, message: "Room doesn't exist" });
         }
         const room = await Room.findById(roomId);
-        if (!room.owner.equals(userId)) {
+        if (room.owner.equals(userId)) {
             return res.status(405).json({
                 message: "Creator cannot leave the room",
                 success: false
@@ -169,7 +173,7 @@ export const leaveRoom = async (req, res) => {
 export const getRoomById = async (req, res) => {
     try {
         const roomID = req.params.roomId;
-        
+
         if (!roomID) {
             return res.status(400).json({
                 message: "Room Id is required!"
@@ -177,7 +181,7 @@ export const getRoomById = async (req, res) => {
         }
 
         const room = await Room.findById(roomID)
-            .populate('owner', 'fullName email profilePicture') 
+            .populate('owner', 'fullName email profilePicture')
             .populate('members', 'fullName email profilePicture');
 
         if (!room) {
@@ -210,67 +214,123 @@ export const getRoomById = async (req, res) => {
 
     } catch (error) {
         console.error("Get Room by Id Error:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Internal server error" 
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
         });
     }
 }
-export const invite = async (req, res) => {
-    try {
 
-    } catch (error) {
+export const sendRoomInvites = async (req, res) => {
 
-    }
-}
-export const sendJoinRequest = async (req, res) => {
     try {
-        const { roomCode, message } = req.body;
-        if (!roomCode) {
-            return res.status(400).json({
-                message: "RoomCode not found",
-                success: false
+        const { roomId, emails } = req.body;
+        const inviterId = req.user._id;
+        const room = await Room.findOne({ _id: roomId });
+        if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
+        const clientBaseURL = process.env.CLIENT_BASE_URL || 'http://localhost:5173';
+        const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000);
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        })
+        for (const email of emails) {
+            const existingUser = await User.findOne({email});
+            let isAlreadyInRoom = false;
+            if(existingUser){
+                const userId = existingUser._id.toString();
+                const ownerId = room.owner.toString();
+                const isMember = room.members.some(memberId => memberId.toString() === userId);
+                if ((userId === ownerId) || isMember) {
+                    isAlreadyInRoom = true;
+                }
+            }
+            const pendingInvite = await Invite.findOne({
+                roomId: room._id,
+                invitedEmail: email,
+                expiresAt: { $gt: new Date() } 
+            });
+            if (isAlreadyInRoom || pendingInvite) {
+                continue;
+            }
+            
+            const rawToken = crypto.randomBytes(32).toString('hex');
+            await Invite.create({
+                token: rawToken,
+                roomId: room._id,
+                invitedEmail: email,
+                invitedBy: inviterId,
+                expiresAt
             })
-        }
-        const room = await Room.findOne({ roomCode: roomCode });
-        if (!room) {
-            return res.status(404).json({
-                message: "Room not exist",
-                success: false
-            })
-        }
-        if (room.members.includes(req.user._id)) {
-            return res.status(400).json({
-                message: "You are already a member of this room",
-                success: false
+            const joinUrl = `${clientBaseURL}/join?token=${rawToken}`;
+            console.log(joinUrl);
+            await transporter.sendMail({
+                from: `"CodeSync" <${process.env.EMAIL_USER}>`,
+                to: email,
+                subject: `You're invited to collaborate on ${room.name}`,
+                html: `
+          <div style="font-family: sans-serif; padding: 24px; background: #0b0e14; color: #fff; border-radius: 12px;">
+            <h2 style="color: #e491c9;">Workspace Invitation</h2>
+            <p><strong>${req.user.fullName}</strong> invited you to <strong>${room.name}</strong>.</p>
+            <p style="font-size: 13px; color: #888;">This invite is intended exclusively for <strong>${email}</strong> and expires in 48 hours.</p>
+            <a href="${joinUrl}" style="display: inline-block; background: #982598; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 16px;">Accept Invitation</a>
+          </div>
+        `,
             });
         }
-        const existingRequest = await JoinRequest.findOne({
-            senderId: req.user._id,
-            roomId: room._id
-        });
-        if (existingRequest) {
-            return res.status(400).json({
-                message: "Request already sent",
-                success: false
-            })
-        }
-        await JoinRequest.create({
-            senderId: req.user._id,
-            roomId: room._id,
-            message: message || '',
-            status: "pending"
-        });
-        return res.status(201).json({
-            success: true, message: "Request sent successfully"
-        })
+        return res.status(200).json({ success: true, message: 'Invites sent securely.' });
     } catch (error) {
-        console.error("error in sending join request ", error);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({success:false, message: error.message });
+    }
+
+}
+export const acceptInvite=async(req,res)=>{
+    let session=null;
+    try{
+        const {token} = req.body;
+        const userId=req.user._id;
+        const userEmail = req.user.email;
+        if(!token){
+            return res.status(400).json({success:false,message:"You are not authorized to join this workspace"});
+        }
+        const invite=await Invite.findOne({token});
+        if(!invite){
+            return res.status(404).json({success:false,message:"Invalid or expired invite link"});
+        }
+        if (invite.expiresAt && new Date() > new Date(invite.expiresAt)) {
+            await Invite.findByIdAndDelete(invite._id);
+            return res.status(410).json({ success: false, message: "This invite link has expired" });
+        }
+        if (invite.invitedEmail && invite.invitedEmail.toLowerCase() !== userEmail.toLowerCase()) {
+            return res.status(403).json({ 
+                success: false, 
+                message: `This invite was not sent to you.` 
+            });
+        }
+        const roomId=invite.roomId;
+        session = await mongoose.startSession();
+        session.startTransaction();
+        await Room.findByIdAndUpdate(roomId,{$addToSet:{members:userId}}).session(session);
+        await User.findByIdAndUpdate(userId,{$addToSet:{rooms:roomId}}).session(session);
+        await Invite.findByIdAndDelete(invite._id).session(session);
+        await session.commitTransaction();
+        session.endSession();
+        return res.status(200).json({success:true,message:"Successfully joined the workspace",roomId});
+
+    } catch(error){ 
+        if (session) {
+            if (session.inTransaction()) {
+                await session.abortTransaction();
+            }
+            session.endSession(); 
+        }
+        console.error("Error in accepting invite: ", error);
+        return res.status(500).json({success:false, message: error.message });
     }
 }
-
-
 export const getJoinRequest = async (req, res) => {
     try {
         const roomId = req.params.roomId;

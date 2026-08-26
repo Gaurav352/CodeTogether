@@ -4,6 +4,7 @@ import AuthLeftPanel from '../components/auth/AuthLeftPanel';
 import AuthForm from '../components/auth/AuthForm';
 
 export default function AuthPage() {
+  
   return (
     <div className="min-h-screen bg-navy flex items-center justify-center p-4 relative overflow-hidden font-sans text-ghost-white selection:bg-brand-pink selection:text-navy">
       

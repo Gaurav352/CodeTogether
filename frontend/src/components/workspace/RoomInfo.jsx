@@ -2,162 +2,193 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, FolderGit2, Link2, Copy, CheckCircle2, 
-  TerminalSquare, CalendarDays, Fingerprint 
+  TerminalSquare, CalendarDays, Fingerprint, 
+  UserPlus, Sparkles, ShieldCheck 
 } from 'lucide-react';
 import useWorkspaceStore from '../../zustand/useWorkspaceStore';
+import InviteModal from './InviteModal';
+import toast from 'react-hot-toast';
 
 const RoomInfo = () => {
-  const {currentRoom}=useWorkspaceStore();
+  const { currentRoom } = useWorkspaceStore();
   const [copied, setCopied] = useState(false);
-  const room = currentRoom || {
-    name: "CodeSync Core Engine",
-    roomCode: "SYNC-88X2",
-    description: "Main workspace for developing the real-time collaboration features and Yjs CRDT implementations.",
-    owner: { name: "Admin User" },
-    members: [{ name: "Alice Dev" }, { name: "Bob Coder" }, { name: "Charlie Web" }],
-    folders: [1, 2, 3], 
-    inviteLink: "https://localhost:5173/join/SYNC-88X2",
-    createdAt: new Date().toISOString()
-  };
+  const [isInviteOpen, setIsInviteOpen] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(room.inviteLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const room = currentRoom ?? {
+    name: '',
+    description: '',
+    roomCode: '',
+    inviteLink: '',
+    createdAt: Date.now(),
+    members: [],
+    folders: [],
+    owner: {},
   };
 
   const containerVariants = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.08 } }
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    hidden: { opacity: 0, y: 15 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 260, damping: 20 } }
   };
 
   return (
-    <div className="h-full w-full overflow-y-auto bg-navy text-ghost-white p-6 lg:p-12 custom-scrollbar">
+    <div className="h-full w-full overflow-y-auto bg-navy text-ghost-white p-6 lg:p-10 custom-scrollbar relative">
       <motion.div 
         variants={containerVariants} 
         initial="hidden" 
         animate="show"
         className="max-w-6xl mx-auto space-y-6"
       >
-        {/* Header Section */}
-        <motion.div variants={itemVariants} className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-brand-purple/20 rounded-xl border border-brand-purple/50 shadow-[0_0_15px_rgba(152,37,152,0.3)]">
-            <TerminalSquare className="w-8 h-8 text-brand-pink" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-ghost-white via-brand-pink to-brand-purple bg-clip-text text-transparent">
-              {room.name}
-            </h1>
-            <p className="text-ghost-white/50 text-sm flex items-center gap-2 mt-1">
-              <Fingerprint className="w-4 h-4" /> Room Identity Code: <span className="font-mono text-brand-pink">{room.roomCode}</span>
-            </p>
+        {/* Header Banner Section */}
+        <motion.div 
+          variants={itemVariants} 
+          className="relative overflow-hidden bg-gradient-to-r from-brand-purple/20 via-navy to-navy border border-brand-purple/30 rounded-3xl p-6 lg:p-8 backdrop-blur-xl shadow-[0_0_30px_rgba(152,37,152,0.15)]"
+        >
+          <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-brand-purple/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-5">
+              <div className="p-4 bg-brand-purple/30 rounded-2xl border border-brand-pink/30 shadow-[0_0_20px_rgba(228,145,201,0.2)]">
+                <TerminalSquare className="w-10 h-10 text-brand-pink" />
+              </div>
+              <div>
+                <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-ghost-white via-brand-pink to-brand-purple bg-clip-text text-transparent">
+                  {room?.name}
+                </h1>
+                <div className="flex flex-wrap items-center gap-3 text-ghost-white/60 text-xs sm:text-sm mt-2 font-mono">
+                  <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                    <Fingerprint className="w-4 h-4 text-brand-pink" /> Code: <span className="text-brand-pink font-bold">{room.roomCode}</span>
+                  </span>
+                  <span className="flex items-center gap-1.5 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+                    <CalendarDays className="w-4 h-4 text-brand-purple" /> {new Date(room.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* CTA Buttons */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsInviteOpen(true)}
+                className="px-5 py-3 bg-gradient-to-r from-brand-purple to-brand-pink hover:opacity-90 transition-all rounded-xl font-semibold text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(152,37,152,0.4)] hover:scale-[1.02] active:scale-95"
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite Collaborators
+              </button>
+            </div>
           </div>
         </motion.div>
 
-        {/* Top Grid: Info & Actions */}
+        {/* Top Grid: Overview & Interactive Share */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Main Info Card */}
-          <motion.div variants={itemVariants} className="lg:col-span-2 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-purple/10 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-150" />
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              Workspace Overview
-            </h2>
-            <p className="text-ghost-white/70 leading-relaxed mb-6">
-              {room.description || "No description provided for this workspace. Time to write some code!"}
-            </p>
+          <motion.div variants={itemVariants} className="lg:col-span-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 lg:p-8 flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-brand-pink/10 rounded-full blur-3xl -mr-16 -mt-16 transition-transform group-hover:scale-150" />
+            <div>
+              <h2 className="text-lg font-bold tracking-wide mb-3 flex items-center gap-2 text-ghost-white">
+                <Sparkles className="w-5 h-5 text-brand-pink" /> Workspace Overview
+              </h2>
+              <p className="text-ghost-white/70 leading-relaxed text-sm lg:text-base">
+                {room.description || "No description provided for this workspace. Time to build collaborative applications!"}
+              </p>
+            </div>
             
-            <div className="flex items-center gap-6 text-sm text-ghost-white/50 border-t border-white/10 pt-4 mt-auto">
-              <div className="flex items-center gap-2">
-                <CalendarDays className="w-4 h-4 text-brand-purple" />
-                Created {new Date(room.createdAt).toLocaleDateString()}
+            {/* Quick Metrics */}
+            <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-6 mt-6">
+              <div className="flex items-center gap-4 bg-navy/60 p-4 rounded-2xl border border-white/5">
+                <div className="p-3 bg-brand-pink/10 rounded-xl">
+                  <Users className="w-6 h-6 text-brand-pink" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-ghost-white">{(room.members?.length || 0) + 1}</div>
+                  <div className="text-xs text-ghost-white/50">Total Engineers</div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 bg-navy/60 p-4 rounded-2xl border border-white/5">
+                <div className="p-3 bg-brand-purple/10 rounded-xl">
+                  <FolderGit2 className="w-6 h-6 text-brand-purple" />
+                </div>
+                <div>
+                  <div className="text-2xl font-black text-ghost-white">{room.folders?.length || 0}</div>
+                  <div className="text-xs text-ghost-white/50">Project Nodes</div>
+                </div>
               </div>
             </div>
           </motion.div>
 
-          {/* Quick Stats & Invite Link */}
-          <motion.div variants={itemVariants} className="space-y-6">
-            {/* Invite Module */}
-            <div className="bg-gradient-to-br from-brand-purple/20 to-navy border border-brand-purple/30 rounded-2xl p-6 shadow-[0_0_20px_rgba(152,37,152,0.15)] relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Link2 className="w-24 h-24" />
+          {/* Quick Share Link Box */}
+          <motion.div variants={itemVariants} className="bg-gradient-to-br from-white/5 to-brand-purple/10 border border-white/10 rounded-3xl p-6 flex flex-col justify-between relative">
+            <div>
+              <div className="p-3 bg-brand-purple/20 w-fit rounded-xl border border-brand-purple/40 mb-4">
+                <Link2 className="w-6 h-6 text-brand-pink" />
               </div>
-              <h3 className="font-semibold mb-2 relative z-10">Invite Link</h3>
-              <p className="text-xs text-ghost-white/60 mb-4 relative z-10">Share this encrypted link to invite collaborators instantly.</p>
-              
-              <div className="flex items-center bg-navy/80 border border-white/10 rounded-lg overflow-hidden relative z-10">
+              <h3 className="font-bold text-lg mb-1">Encrypted Share Link</h3>
+              <p className="text-xs text-ghost-white/60 mb-6">Direct access link for authorized team members to bypass room identity keys.</p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center bg-navy/90 border border-white/10 rounded-xl overflow-hidden p-1.5 focus-within:border-brand-purple transition-all">
                 <input 
                   type="text" 
                   readOnly 
                   value={room.inviteLink} 
-                  className="bg-transparent w-full px-3 py-2 text-xs font-mono text-ghost-white/80 outline-none"
+                  className="bg-transparent w-full px-3 text-xs font-mono text-ghost-white/80 outline-none truncate"
                 />
-                <button 
-                  onClick={handleCopy}
-                  className="p-2 hover:bg-white/10 transition-colors border-l border-white/10"
-                >
-                  {copied ? <CheckCircle2 className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-brand-pink" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Stats Module */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center">
-                <Users className="w-6 h-6 text-brand-pink mb-2" />
-                <span className="text-2xl font-bold">{room.members?.length+1 || 0}</span>
-                <span className="text-xs text-ghost-white/50">Engineers</span>
-              </div>
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col items-center justify-center">
-                <FolderGit2 className="w-6 h-6 text-brand-purple mb-2" />
-                <span className="text-2xl font-bold">{room.folders?.length || 0}</span>
-                <span className="text-xs text-ghost-white/50">Nodes</span>
               </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Members Roster */}
-        <motion.div variants={itemVariants} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-6">
-          <h2 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            Active Collaborators
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {/* The Owner is always first */}
-            <div className="flex items-center gap-3 p-3 bg-brand-purple/10 border border-brand-purple/20 rounded-xl">
-              <div className="w-10 h-10 rounded-full bg-brand-purple flex items-center justify-center font-bold shadow-[0_0_10px_rgba(152,37,152,0.5)]">
+        {/* Active Collaborators Section */}
+        <motion.div variants={itemVariants} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 lg:p-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-brand-purple" /> Active Roster
+            </h2>
+            <span className="text-xs font-mono text-ghost-white/50 bg-white/5 px-3 py-1 rounded-full border border-white/10">
+              {(room.members?.length || 0) + 1} Seats Claimed
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Workspace Admin */}
+            <div className="flex items-center gap-3 p-3.5 bg-brand-purple/15 border border-brand-purple/30 rounded-2xl relative group">
+              <div className="w-11 h-11 rounded-xl bg-brand-purple flex items-center justify-center font-bold text-lg shadow-[0_0_12px_rgba(152,37,152,0.6)]">
                 {room.owner?.fullName?.charAt(0).toUpperCase() || 'O'}
               </div>
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-sm font-medium truncate">{room.owner?.fullName || 'Owner'}</span>
-                <span className="text-[10px] text-brand-pink uppercase tracking-wider">Admin</span>
+              <div className="flex flex-col min-w-0">
+                <span className="text-sm font-semibold truncate text-ghost-white">{room.owner?.fullName || 'Room Owner'}</span>
+                <span className="text-[10px] text-brand-pink uppercase tracking-widest font-bold">Workspace Creator</span>
               </div>
             </div>
 
-            {/* Loop through the rest of the members */}
+            {/* Members List */}
             {room.members?.map((member, idx) => (
-              <div key={idx} className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 transition-colors border border-white/5 rounded-xl cursor-default">
-                <div className="w-10 h-10 rounded-full bg-navy border border-white/20 flex items-center justify-center font-medium text-brand-pink">
+              <div key={idx} className="flex items-center gap-3 p-3.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl transition-all">
+                <div className="w-11 h-11 rounded-xl bg-navy border border-white/20 flex items-center justify-center font-bold text-brand-pink">
                   {member?.fullName?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <div className="flex flex-col overflow-hidden">
-                  <span className="text-sm truncate">{member?.fullName || 'Unknown User'}</span>
-                  <span className="text-[10px] text-ghost-white/40">Member</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-medium truncate text-ghost-white">{member?.fullName || 'Collaborator'}</span>
+                  <span className="text-[10px] text-ghost-white/40 uppercase tracking-widest">Engineer</span>
                 </div>
               </div>
             ))}
           </div>
         </motion.div>
-
       </motion.div>
+
+      {/* Binded Modal Component */}
+      <InviteModal 
+        isOpen={isInviteOpen} 
+        onClose={() => setIsInviteOpen(false)} 
+        roomCode={room.roomCode}
+      />
     </div>
   );
 };

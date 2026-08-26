@@ -10,6 +10,7 @@ import Workspace from './Pages/Workspace';
 
 
 import useAuthStore from './zustand/authStore';
+import JoinWorkspace from './Pages/JoinWorkspace';
 
 
 function App() {
@@ -56,6 +57,10 @@ function App() {
         <Route
           path='/workspace/:roomId'
           element={authUser ? <Workspace/> : <Navigate to="/authPage" />}
+        />
+        <Route
+          path='/join'
+          element={<JoinWorkspace/>}
         />
       </Routes>
       

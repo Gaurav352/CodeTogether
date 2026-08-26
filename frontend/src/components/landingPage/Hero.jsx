@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import useAuthStore from '../../zustand/authStore';
+import { Link } from 'react-router-dom';
 
 export default function Hero() {
   const codeSnippet = `function initWorkspace() {\n  const session = createCollab();\n  session.connect({\n    video: true,\n    cursor: 'smooth'\n  });\n  console.log('We are live! 🚀');\n}`;
   const [typedCode, setTypedCode] = useState('');
+  const {authUser}=useAuthStore();
 
   useEffect(() => {
     let index = 0;
@@ -18,13 +21,11 @@ export default function Hero() {
   return (
     <section className="relative bg-navy py-32 px-6 md:px-12 flex items-center justify-center min-h-screen overflow-hidden">
       
-      {/* Ambient Background Glows */}
       <div className="absolute top-20 left-10 w-96 h-96 bg-brand-purple rounded-full mix-blend-screen filter blur-[120px] opacity-40 animate-pulse"></div>
       <div className="absolute bottom-10 right-10 w-96 h-96 bg-brand-pink rounded-full mix-blend-screen filter blur-[120px] opacity-30"></div>
 
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
         
-        {/* Left: Text Content */}
         <div className="w-full lg:w-1/2 space-y-8 text-center lg:text-left">
           <h1 className="text-6xl md:text-8xl font-extrabold tracking-tighter text-ghost-white leading-[1.1]">
             Code Together. <br/>
@@ -36,16 +37,15 @@ export default function Hero() {
             Drop the screen sharing. Build alongside your team with zero-latency multiplayer coding, integrated whiteboards, and live execution.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
-            <button className="w-full sm:w-auto bg-brand-pink text-navy px-8 py-4 rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-[0_0_30px_rgba(228,145,201,0.3)]">
-              Start Building Free
-            </button>
-            <button className="w-full sm:w-auto bg-transparent border border-brand-purple/50 text-ghost-white px-8 py-4 rounded-full text-lg font-medium hover:bg-brand-purple/10 transition-colors">
-              Read the Docs
-            </button>
+            <Link to={authUser ? "/dashboard":"/authPage"}>
+              <button className="w-full sm:w-auto bg-brand-pink text-navy px-8 py-4 rounded-full text-lg font-bold hover:scale-105 transition-transform shadow-[0_0_30px_rgba(228,145,201,0.3)]">
+                Start Building Free
+              </button>
+            </Link>
+            
           </div>
         </div>
 
-        {/* Right: Glassmorphism Editor Preview */}
         <motion.div 
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -55,7 +55,6 @@ export default function Hero() {
         >
           <div className="bg-[#0f112e]/80 backdrop-blur-2xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 relative transform perspective-1000 rotate-y-[-5deg] rotate-x-[5deg]">
             
-            {/* Minimalist Window Header */}
             <div className="bg-white/5 px-4 py-4 flex items-center justify-between border-b border-white/5">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#ff5f56]"></div>
@@ -63,16 +62,14 @@ export default function Hero() {
                 <div className="w-3 h-3 rounded-full bg-[#27c93f]"></div>
               </div>
               <div className="bg-black/20 px-3 py-1 rounded-md text-ghost-white/50 text-xs font-mono">workspace/main.js</div>
-              <div className="w-4"></div> {/* spacer */}
+              <div className="w-4"></div> 
             </div>
 
-            {/* Editor Body */}
             <div className="p-8 font-mono text-sm md:text-base h-[320px] relative text-ghost-white/90">
               <div className="whitespace-pre-wrap relative">
                 <span className="text-brand-pink">import</span> {'{ createCollab }'} <span className="text-brand-pink">from</span> 'codesync';<br/><br/>
                 {typedCode}
                 
-                {/* Active Typing Cursor */}
                 <motion.span 
                   animate={{ opacity: [1, 0] }} 
                   transition={{ repeat: Infinity, duration: 0.8 }}
@@ -82,7 +79,6 @@ export default function Hero() {
                 </motion.span>
               </div>
 
-              {/* Observing Cursor */}
               <motion.div 
                 animate={{ y: [0, -15, 0], x: [0, 10, 0] }}
                 transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}

@@ -98,12 +98,11 @@ export class MonacoBinding {
       });
     });
 
-    // ==== 5. Remote awareness -> render decorations ====
     this.awarenessListener = () => this.renderRemoteCursors();
     this.awareness.on('change', this.awarenessListener);
+    this.renderRemoteCursors();
   }
 
-  // ============== THE REST REMAINS UNCHANGED =================
   renderRemoteCursors() {
     const newDecorations = [];
 

@@ -1,27 +1,16 @@
-import mongoose from "mongoose";
 
-const joinRequestSchema = new mongoose.Schema({
-  senderId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
-  roomId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Room",
-    required: true
-  },
-  status: {
-    type: String,
-    enum: ["pending", "accepted", "rejected"],
-    default: "pending"
-  },
-  message: { 
+import mongoose from 'mongoose';
+const inviteSchema = new mongoose.Schema({
+  token: { type: String, required: true, unique: true, index: true },
+  roomId: { type: mongoose.Schema.Types.ObjectId, ref: 'Room', required: true },
+  invitedEmail: { type: String, required: true, lowercase: true, trim: true },
+  invitedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  status: { 
     type: String, 
-    default: ""
-  }
+    enum: ['PENDING', 'ACCEPTED', 'REVOKED'], 
+    default: 'PENDING' 
+  },
+  expiresAt: { type: Date, required: true,index:{expires:0} }
 }, { timestamps: true });
 
-joinRequestSchema.index({ senderId: 1, roomId: 1 }, { unique: true });
-const JoinRequest = mongoose.model("JoinRequest", joinRequestSchema);
-export default JoinRequest;
+export default mongoose.model('Invite', inviteSchema);

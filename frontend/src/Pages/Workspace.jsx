@@ -12,7 +12,6 @@ import useChatStore from '../zustand/useChatStore';
 import ACTIONS from "../../../socketEvents.js";
 import RoomInfo from '../components/workspace/RoomInfo.jsx';
 import { useSearchParams } from 'react-router-dom';
-
 export default function Workspace() {
   const [searchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'editor'
