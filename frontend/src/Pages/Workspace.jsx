@@ -71,7 +71,7 @@ export default function Workspace() {
                 activeTab === 'whiteboard' ? 'opacity-100 scale-100 z-10 visible' : 'opacity-0 scale-95 z-0 invisible pointer-events-none'
             }`}>
                 <div className="text-ghost-white p-8">
-                    Whiteboard Component goes here...
+                    Whiteboard Component coming soon...
                 </div>
             </div>
 
